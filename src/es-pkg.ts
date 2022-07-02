@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 import program from 'commander'
 import pkg from '../package.json'
-import {config, execute} from './utils/util'
+import {execute} from './utils/util'
 import {log} from "./utils/log";
-import path from 'path'
 program.on('--help', () => {
     log('  Usage:');
     log('        compile  编译项目');

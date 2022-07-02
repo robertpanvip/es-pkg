@@ -27,22 +27,11 @@ async function main() {
         entryPoints,
         bundle: false,
         platform: 'node',
-        /* define:{
-             'process.env.NODE_ENV': "NODE_ENV"
-         },*/
         format: 'cjs',
-        //target:  ['node12'],
-        //external: config.optimizeDeps?.exclude,
-        //logLevel: 'error',
         splitting: false,
         sourcemap: false,
         outdir: 'bin',
         ignoreAnnotations: false,
-        //metafile: true,
-        /*supported: {
-            'dynamic-import': false,
-            'import-meta': false,
-        }*/
     }
     await build(buildOptions)
 }

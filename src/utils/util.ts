@@ -1,6 +1,5 @@
 import chalk from 'chalk';// 改变屏幕文字颜色
 import type {Options as ExecaOptions, ExecaReturnValue} from 'execa'
-import {execa} from 'execa'
 import gulpInst from 'gulp'
 import type {Gulp} from 'gulp'
 import del from 'del';
@@ -8,7 +7,6 @@ import type {ProgressData} from 'del';
 import type Undertaker from 'undertaker'
 import {error} from "./log";
 import {logEvents, logSyncTask} from "./task";
-import Progress from './progress';
 import path from "path";
 import fs from "fs";
 
@@ -44,12 +42,11 @@ export const titleCase = (str: string) => {
  **/
 export async function remove(url: string, folders: boolean = false) {
     const path = folders ? `${url}/**/*` : url;
-    const pr =  new Progress(folders ?'删除文件':"删除文件夹",0);
     await del([path], {
         force: true,
         dot: true,
         gitignore: false,
-        onProgress({totalCount, deletedCount, percent}:ProgressData) {
+        onProgress({totalCount, deletedCount, percent}: ProgressData) {
             //pr.render({completed:deletedCount,total:totalCount})
         }
     });
@@ -64,6 +61,8 @@ export async function run(
     args: string[],
     opts: ExecaOptions<string> = {}
 ): Promise<ExecaReturnValue<string>> {
+    //由于execa 的包是esm形式的
+    const {execa} = await import("execa")
     return execa(bin, args, {stdio: 'inherit', ...opts})
 }
 
@@ -120,7 +119,8 @@ function exit(code: number) {
     }
     process.exit(code);
 }
-export const autoUpgrade = (str:string) => {
+
+export const autoUpgrade = (str: string) => {
     let arr = str.split('.').map(it => Number(it));
     const autoUpgradeVersion = (arr: number[], index: number) => {
         if (index === 0) {
