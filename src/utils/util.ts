@@ -15,7 +15,14 @@ const appDirectory = fs.realpathSync(process.cwd());
 export const resolveApp = (relativePath: string) => path.resolve(appDirectory, relativePath);
 
 export const pkg = JSON.parse(fs.readFileSync(resolveApp('package.json'), 'utf-8'))
-const esPkgInfo = JSON.parse(fs.readFileSync(resolveApp('espkg.json'), 'utf-8'))
+
+const esPkgInfo = (()=>{
+    try {
+        return JSON.parse(fs.readFileSync(resolveApp('espkg.json'), 'utf-8'))
+    }catch(err){
+        return {}
+    }
+})()
 
 export const config = {
     lib: "./lib",
