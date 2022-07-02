@@ -43,7 +43,7 @@ gulp.task('copy-info', async () => {
 
     const matches = res.url.match(/@([0-9]*\.[0-9]*\.[0-9])*/)
     res.version = matches[1]
-    json.version = res.version ? autoUpgrade(json.version) : pkg.version
+    json.version = res.version ? autoUpgrade(res.version) : pkg.version
     delete json.devDependencies;
     delete json.scripts;
     // @ts-ignore
