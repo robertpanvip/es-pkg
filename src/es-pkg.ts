@@ -3,17 +3,23 @@ import program from 'commander'
 import pkg from '../package.json'
 import {execute} from './utils/util'
 import {log} from "./utils/log";
-program.on('--help', () => {
+
+const help = () => {
     log('  Usage:');
     log('        compile  编译项目');
     log('        unpkg    unpkg 打包项目');
     log('        publish    发布项目');
     log('        doc    根据ts声明生成md');
-});
+}
+program.on('--help', help);
 
 program
     .version(pkg.version)
     .action(async (options, destination) => {
+        if(!destination){
+            help();
+            return;
+        }
         const command = destination[0];
         if (command === 'compile') {
             execute((await import('./run/compile')))
