@@ -7,8 +7,9 @@ import gulpSass from "gulp-sass";
 import rename from "gulp-rename";
 import autoPreFixer from "gulp-autoprefixer"
 import Sass from "sass";
-import {config, remove} from "../utils/util";
+import {config, getJson, remove} from "../utils/util";
 import {error, log} from "../utils/log";
+
 const sass = gulpSass(Sass)
 
 const clean = async () => {
@@ -19,8 +20,8 @@ const clean = async () => {
 }
 
 const dealScss = () => {
-    const copy=(dest:string)=>{
-        return ()=> gulp.src(`${config.src}/**/*.scss`)
+    const copy = (dest: string) => {
+        return () => gulp.src(`${config.src}/**/*.scss`)
             .pipe(logger({
                 before: `copyScss...`,
                 after: 'copyScss complete!',
@@ -29,15 +30,17 @@ const dealScss = () => {
             }))
             .pipe(gulp.dest(dest))
     }
-    const compileScss =() => {
+    const compileScss = () => {
         return gulp.src(`${config.src}/**/*.scss`)
-            .pipe(sass({outputStyle: 'compressed',outFile:'xx'}).on('error', sass.logError))
+            .pipe(sass({outputStyle: 'compressed', outFile: 'xx'}).on('error', sass.logError))
             .pipe(autoPreFixer())
-            .pipe(rename((path) =>{path.extname = ".min.css"}))
+            .pipe(rename((path) => {
+                path.extname = ".min.css"
+            }))
             .pipe(plumber())
             .pipe(gulp.dest(config.lib));
     }
-    return parallel(copy(config.es),copy(config.lib),compileScss)
+    return parallel(copy(config.es), copy(config.lib), compileScss)
 }
 
 
@@ -52,6 +55,7 @@ const copyScssToLib = () => {
         .pipe(gulp.dest(config.lib));
 }
 const compileEs = () => {
+    const {compilerOptions = {}} = getJson('tsconfig.json');
     return gulp.src([
         `${config.src}/**/*.tsx`,
         `${config.src}/**/*.ts`,
@@ -70,10 +74,10 @@ const compileEs = () => {
             "declaration": true,
             "esModuleInterop": true,
             "resolveJsonModule": true,
-            "module": "commonjs",
             "target": "esnext",
             "jsx": "react",
-            "moduleResolution": 'node'
+            "moduleResolution": 'node',
+            ...compilerOptions,
         }))
         .on('error', () => null)
         .pipe(logger({
@@ -86,7 +90,11 @@ const compileEs = () => {
         .pipe(plumber())
         .pipe(gulp.dest(config.es));
 }
-
+const copyTds = () => {
+    return gulp.src([
+        `${config.es}/**/*.d.ts`,
+    ]).pipe(gulp.dest(config.lib));
+}
 const compileLib = () => {
     return gulp.src([`${config.es}/**/*.js`])
         .pipe(logger({
@@ -122,6 +130,6 @@ const compileLib = () => {
         .pipe(gulp.dest(config.lib))
 }
 
-const compileEsAndLib = series(compileEs, compileLib)
+const compileEsAndLib = series(compileEs, copyTds, compileLib)
 
 export default series(clean, parallel(dealScss(), copyScssToLib, compileEsAndLib))

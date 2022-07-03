@@ -2,6 +2,7 @@ import type {BuildOptions} from 'esbuild'
 import {build} from 'esbuild'
 import fs from 'fs'
 import path from 'path'
+export const resolveApp = (relativePath: string) => path.resolve(fs.realpathSync(process.cwd()), relativePath);
 
 function getAllFiles(root: string) {
     let res: string[] = [];
@@ -28,12 +29,16 @@ async function main() {
         bundle: false,
         platform: 'node',
         format: 'cjs',
+        target:'node8',
         splitting: false,
         sourcemap: false,
         outdir: 'bin',
         ignoreAnnotations: false,
     }
     await build(buildOptions)
+    let res = fs.readFileSync(resolveApp("bin/utils/util.js"), 'utf-8');
+    res = res.replace('Promise.resolve().then(() => __toESM(require("execa")))','import("execa")')
+    fs.writeFileSync('bin/utils/util.js',res,'utf-8')
 }
 
 main().catch(err => {
