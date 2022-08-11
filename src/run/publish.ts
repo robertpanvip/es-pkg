@@ -5,7 +5,7 @@ import fs from "fs"
 import path from "path";
 import {autoUpgrade, config, pkg, remove, run} from "../utils/util";
 import {log} from "../utils/log";
-
+const scoped=/^@[a-zA-Z0-9]+\/.+$/;
 //cwd
 gulp.task('clean', async (cb) => {
     log(`清除${config.publishDir}开始`)
@@ -50,7 +50,11 @@ gulp.task('copy-info', async () => {
     let jsonStr = JSON.stringify(json, "", "\t")
     const ex = fs.existsSync(`${config.publishDir}/`)
     if (!ex) {
-        fs.mkdirSync(`${config.publishDir}/`)
+        if(scoped.test(pkg.name)){
+            fs.mkdirSync(`${config.publishDir}/`,{recursive:true})
+        }else{
+            fs.mkdirSync(`${config.publishDir}/`)
+        }
     }
     fs.writeFileSync(`${config.publishDir}/package.json`, jsonStr)
     log(`生成 package完成`)
@@ -95,7 +99,16 @@ gulp.task('copy-es', () => {
 
 gulp.task('npm-publish', async function () {
     log('npm publish--');
-    await run(`npm`, ['publish'], {cwd: path.join(process.cwd(), config.publishDir)});
+    let publishAccess: string[] = [];
+    //公共包
+    if (scoped.test(pkg.name)) {
+        publishAccess = ["--access", "public"]
+    }
+    if (config.publishAccess) {
+        publishAccess = config.publishAccess;
+    }
+    console.log(['publish', ...publishAccess]);
+    await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
 });
 
 export default gulp.series('clean', 'del-dist', 'copy-info', 'copy-dist', 'copy-es', 'copy-lib', 'npm-publish')
