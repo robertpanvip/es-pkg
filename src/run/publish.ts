@@ -5,7 +5,7 @@ import fetch from "node-fetch"
 import fs from "fs"
 import path from "path";
 import {autoUpgrade, config, pkg, remove, run} from "../utils/util";
-import {log} from "../utils/log";
+import {error, log} from "../utils/log";
 
 const scoped = /^@[a-zA-Z0-9]+\/.+$/;
 
@@ -32,14 +32,21 @@ gulp.task('del-dist', async (cb) => {
 gulp.task('copy-info', async () => {
     log(`生成 package 开始`)
     const json: Record<string, string> = pkg;
-    const response = await fetch(`https://registry.npmjs.org/${pkg.name}`)
-    const res = await response.json() as {"dist-tags":{latest:string}}
-    if (res["dist-tags"]) {
-        json.version = autoUpgrade(res["dist-tags"].latest)
-    } else {
-        log(`获取版本号失败`)
-        json.version = pkg.version
+    try {
+        const response = await fetch(`https://registry.npmjs.org/${pkg.name}`)
+        const res = await response.json() as {"dist-tags":{latest:string}}
+        if (res["dist-tags"]) {
+            json.version = autoUpgrade(res["dist-tags"].latest)
+        } else {
+            log(`获取版本号失败`)
+            json.version = pkg.version
+        }
+    }catch (e) {
+        error(`获取版本号失败`,e)
+        throw new Error(`获取版本号失败`)
     }
+
+
     delete json.devDependencies;
     delete json.scripts;
     let jsonStr = JSON.stringify(json, null, "\t")
@@ -102,7 +109,10 @@ gulp.task('npm-publish', async function () {
     if (config.publishAccess) {
         publishAccess = config.publishAccess;
     }
-    log(`npm publish--${publishAccess.join("")}`);
+    log.warn("npm-registry")
+    await run(`npm`,["config",'get','registry'])
+    log.warn("npm-whoami")
+    await run(`npm`,["whoami"])
     await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
 });
 
