@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import program from 'commander'
 import pkg from '../package.json'
-import {execute} from './utils/util'
+import execute from './utils/execute'
 import {log} from "./utils/log";
 
 const help = () => {
@@ -30,7 +30,7 @@ program
         } else if (command === 'doc') {
             execute((await import('./run/doc')))
         } else {
-            log('未知命令');
+            log('未知命令',command);
         }
     })
     .parse(process.argv);

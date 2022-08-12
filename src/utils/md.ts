@@ -1,18 +1,10 @@
 import {
     root,
-    paragraph,
     text,
-    heading,
-    list,
-    listItem,
-    brk,
-    emphasis,
-    strike,
     strong,
     tableCell,
     tableRow,
     table,
-    Children
 } from 'mdast-builder';
 import remarkStringify from 'remark-stringify';
 import unified from 'unified';
@@ -39,10 +31,10 @@ export function renderTable({props}: any) {
     const ast = root([
         strong(text("🔨 API")),
         table(
-            columns.map(item => 'left'),
+            columns.map(() => 'left'),
             [
                 tableRow(titles.map(item => tableCell(text(`${item}`)))),
-                ...columns.map((item: any) => {
+                ...columns.map((item: Object) => {
                     const values = Object.values(item)
                     return tableRow(values.map((item) => {
                             if (item == undefined) {

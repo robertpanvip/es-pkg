@@ -1,12 +1,14 @@
 import gulp from 'gulp'
+import chalk from 'chalk';// 改变屏幕文字颜色
 import logger from 'gulp-logger'
-import {fetchUrl as fetch} from "fetch"
+import fetch from "node-fetch"
 import fs from "fs"
 import path from "path";
 import {autoUpgrade, config, pkg, remove, run} from "../utils/util";
 import {log} from "../utils/log";
-const scoped=/^@[a-zA-Z0-9]+\/.+$/;
-//cwd
+
+const scoped = /^@[a-zA-Z0-9]+\/.+$/;
+
 gulp.task('clean', async (cb) => {
     log(`清除${config.publishDir}开始`)
     await remove(config.publishDir);
@@ -29,35 +31,28 @@ gulp.task('del-dist', async (cb) => {
 });
 gulp.task('copy-info', async () => {
     log(`生成 package 开始`)
-    const json: Record<string, any> = pkg;
-    const res: any = await new Promise((resolve, reject) => {
-        fetch(`https://www.unpkg.com/${pkg.name}@latest`, (error, meta) => {
-            if (!error) {
-                resolve({url: meta.finalUrl})
-            } else {
-                log(`获取版本号失败`)
-                reject(error)
-            }
-        })
-    })
-
-    const matches = res.url.match(/@([0-9]*\.[0-9]*\.[0-9])*/)
-    res.version = matches[1]
-    json.version = res.version ? autoUpgrade(res.version) : pkg.version
+    const json: Record<string, string> = pkg;
+    const response = await fetch(`https://registry.npmjs.org/${pkg.name}`)
+    const res = await response.json() as {"dist-tags":{latest:string}}
+    if (res["dist-tags"]) {
+        json.version = autoUpgrade(res["dist-tags"].latest)
+    } else {
+        log(`获取版本号失败`)
+        json.version = pkg.version
+    }
     delete json.devDependencies;
     delete json.scripts;
-    // @ts-ignore
-    let jsonStr = JSON.stringify(json, "", "\t")
+    let jsonStr = JSON.stringify(json, null, "\t")
     const ex = fs.existsSync(`${config.publishDir}/`)
     if (!ex) {
-        if(scoped.test(pkg.name)){
-            fs.mkdirSync(`${config.publishDir}/`,{recursive:true})
-        }else{
+        if (scoped.test(pkg.name)) {
+            fs.mkdirSync(`${config.publishDir}/`, {recursive: true})
+        } else {
             fs.mkdirSync(`${config.publishDir}/`)
         }
     }
     fs.writeFileSync(`${config.publishDir}/package.json`, jsonStr)
-    log(`生成 package完成`)
+    log(`生成 package完成`, chalk.green(json.version))
     log(`拷贝 README 开始`)
     return gulp.src([`./README.md`])
         .pipe(logger({
@@ -98,7 +93,7 @@ gulp.task('copy-es', () => {
 });
 
 gulp.task('npm-publish', async function () {
-    log('npm publish--');
+
     let publishAccess: string[] = [];
     //公共包
     if (scoped.test(pkg.name)) {
@@ -107,7 +102,7 @@ gulp.task('npm-publish', async function () {
     if (config.publishAccess) {
         publishAccess = config.publishAccess;
     }
-    console.log(['publish', ...publishAccess]);
+    log(`npm publish--${publishAccess.join("")}`);
     await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
 });
 

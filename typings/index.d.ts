@@ -63,51 +63,6 @@ declare module "gulp-logger" {
     const res: (props: Props) => NodeJS.ReadWriteStream;
     export default res
 }
-declare module "single-line-log" {
-    export const stdout: (txt: string) => void;
-}
-declare module "memorystream" {
-    class MemoryStream implements NodeJS.ReadWriteStream {
-        readable: boolean
-        read(size?: number | undefined): string | Buffer
-        setEncoding(encoding: BufferEncoding): this
-        pause(): this
-        resume(): this
-        isPaused(): boolean
-        pipe<T extends NodeJS.WritableStream>(destination: T, options?: { end?: boolean | undefined } | undefined): T
-        unpipe(destination?: NodeJS.WritableStream | undefined): this
-        unshift(chunk: string | Uint8Array, encoding?: BufferEncoding | undefined): void
-        wrap(oldStream: NodeJS.ReadableStream): this
-        [Symbol.asyncIterator](): AsyncIterableIterator<string | Buffer>
-        addListener(eventName: string | symbol, listener: (...args: any[]) => void): this
-        on(eventName: string | symbol, listener: (...args: any[]) => void): this
-        once(eventName: string | symbol, listener: (...args: any[]) => void): this
-        removeListener(eventName: string | symbol, listener: (...args: any[]) => void): this
-        off(eventName: string | symbol, listener: (...args: any[]) => void): this
-        removeAllListeners(event?: string | symbol | undefined): this
-        setMaxListeners(n: number): this
-        getMaxListeners(): number
-        listeners(eventName: string | symbol): Function[]
-        rawListeners(eventName: string | symbol): Function[]
-        emit(eventName: string | symbol, ...args: any[]): boolean
-        listenerCount(eventName: string | symbol): number
-        prependListener(eventName: string | symbol, listener: (...args: any[]) => void): this
-        prependOnceListener(eventName: string | symbol, listener: (...args: any[]) => void): this
-        eventNames(): (string | symbol)[]
-        writable: boolean
-        write(buffer: string | Uint8Array, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean
-        write(str: string, encoding?: BufferEncoding | undefined, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean
-        write(buffer: any, cb?: ((err?: Error | null | undefined) => void) | undefined): boolean
-        end(cb?: (() => void) | undefined): this
-        end(data: string | Uint8Array, cb?: (() => void) | undefined): this
-        end(str: string, encoding?: BufferEncoding | undefined, cb?: (() => void) | undefined): this
-    }
-    export default MemoryStream;
-}
-
-declare module "fetch"{
-    export const fetchUrl: (url:string, options:(error:Error,meta:{finalUrl:string,})=>void, callback?:Function) => void;
-}
 declare module "*.json" {
     const json: Object;
     export default json

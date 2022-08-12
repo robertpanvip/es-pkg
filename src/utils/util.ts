@@ -1,15 +1,9 @@
 import chalk from 'chalk';// 改变屏幕文字颜色
 import type {Options as ExecaOptions, ExecaReturnValue} from 'execa'
-import gulpInst from 'gulp'
-import type {Gulp} from 'gulp'
 import del from 'del';
+import type {ProgressData} from 'del';
 import path from "path";
 import fs from "fs";
-import type {ProgressData} from 'del';
-import type Undertaker from 'undertaker'
-import {error} from "./log";
-import {logEvents, logSyncTask} from "./task";
-
 
 const appDirectory = fs.realpathSync(process.cwd());
 
@@ -56,7 +50,6 @@ export async function remove(url: string, folders: boolean = false) {
         dot: true,
         gitignore: false,
         onProgress({totalCount, deletedCount, percent}: ProgressData) {
-            //pr.render({completed:deletedCount,total:totalCount})
         }
     });
 }
@@ -73,60 +66,6 @@ export async function run(
     //由于execa 的包是esm形式的
     const {execa} = await import("execa")
     return execa(bin, args, {stdio: 'inherit', ...opts})
-}
-
-export function execute(exported: Record<string, Undertaker.TaskFunction> | Undertaker.TaskFunction, toRun = ['default']) {
-    if (typeof exported === 'function') {
-        const taskName = exported.displayName || exported.name || 'default';
-        exported = {[taskName]: exported}
-        toRun = [taskName]
-    }
-    logEvents(gulpInst);
-    logSyncTask(gulpInst);
-
-    registerExports(gulpInst, exported);
-    try {
-        //info('Using gulpfile', chalk.magenta('configPath---'));
-        gulpInst["parallel"](toRun)(function (err) {
-            if (err) {
-                exit(1);
-            }
-        });
-    } catch (err: any) {
-        error(err.message);
-        error('To list available tasks, try running: gulp --tasks');
-        exit(1);
-    }
-}
-
-
-function registerExports(gulpInst: Gulp, tasks: Record<string, Undertaker.TaskFunction>) {
-    const taskNames = Object.keys(tasks);
-
-    if (taskNames.length) {
-        taskNames.forEach(register);
-    }
-
-    function register(taskName: string) {
-        const task = tasks[taskName];
-
-        if (typeof task !== 'function') {
-            return;
-        }
-
-        gulpInst.task(task.displayName || taskName, task);
-    }
-}
-
-function exit(code: number) {
-    /* istanbul ignore next */
-    if (process.platform === 'win32' && process.stdout.bufferSize) {
-        process.stdout.once('drain', function () {
-            process.exit(code);
-        });
-        return;
-    }
-    process.exit(code);
 }
 
 export const autoUpgrade = (str: string) => {
