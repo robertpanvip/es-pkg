@@ -109,7 +109,7 @@ gulp.task('npm-publish', async function () {
     await run(`npm`, ["config", 'get', 'registry'])
     log.warn("npm-whoami")
     await run(`npm`, ["whoami"])
-    success(["npm","publish", ...publishAccess].join(''))
+    success(["npm","publish", ...publishAccess].join(' '))
     await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
 });
 
