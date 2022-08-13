@@ -7,6 +7,7 @@
     "test-unpkg": "esno src/es-pkg.ts unpkg",
     "test-doc": "esno src/es-pkg.ts doc",
     "test-publish": "esno src/es-pkg.ts publish",
+    "test-publish-js": "node bin/es-pkg.js publish",
     "publish": "esno src/es-pkg.ts publish",
     "test-link": "npm link",
     "build": "esno build.ts"

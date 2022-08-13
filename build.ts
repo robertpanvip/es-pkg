@@ -39,6 +39,10 @@ async function main() {
     let res = fs.readFileSync(resolveApp("bin/utils/util.js"), 'utf-8');
     res = res.replace('Promise.resolve().then(() => __toESM(require("execa")))','import("execa")')
     fs.writeFileSync('bin/utils/util.js',res,'utf-8')
+
+    let res2 = fs.readFileSync(resolveApp("bin/run/publish.js"), 'utf-8');
+    res2 = res2.replace('Promise.resolve().then(() => __toESM(require("node-fetch")))','import("node-fetch")')
+    fs.writeFileSync('bin/run/publish.js',res2,'utf-8')
 }
 
 main().catch(err => {

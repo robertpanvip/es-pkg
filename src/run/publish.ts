@@ -1,7 +1,6 @@
 import gulp from 'gulp'
 import chalk from 'chalk';// 改变屏幕文字颜色
 import logger from 'gulp-logger'
-import fetch from "node-fetch"
 import fs from "fs"
 import path from "path";
 import {autoUpgrade, config, pkg, remove, run} from "../utils/util";
@@ -32,17 +31,18 @@ gulp.task('del-dist', async (cb) => {
 gulp.task('copy-info', async () => {
     log(`生成 package 开始`)
     const json: Record<string, string> = pkg;
+    const {default: fetch} = await import("node-fetch")
     try {
         const response = await fetch(`https://registry.npmjs.org/${pkg.name}`)
-        const res = await response.json() as {"dist-tags":{latest:string}}
+        const res = await response.json() as { "dist-tags": { latest: string } }
         if (res["dist-tags"]) {
             json.version = autoUpgrade(res["dist-tags"].latest)
         } else {
             log(`获取版本号失败`)
             json.version = pkg.version
         }
-    }catch (e) {
-        error(`获取版本号失败`,e)
+    } catch (e) {
+        error(`获取版本号失败`, e)
         throw new Error(`获取版本号失败`)
     }
 
@@ -110,9 +110,9 @@ gulp.task('npm-publish', async function () {
         publishAccess = config.publishAccess;
     }
     log.warn("npm-registry")
-    await run(`npm`,["config",'get','registry'])
+    await run(`npm`, ["config", 'get', 'registry'])
     log.warn("npm-whoami")
-    await run(`npm`,["whoami"])
+    await run(`npm`, ["whoami"])
     await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
 });
 
