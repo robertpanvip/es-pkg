@@ -3,7 +3,7 @@ import chalk from 'chalk';// 改变屏幕文字颜色
 import logger from 'gulp-logger'
 import fs from "fs"
 import path from "path";
-import {autoUpgrade, config, pkg, remove, run} from "../utils/util";
+import {autoUpgrade, compare, config, pkg, remove, run} from "../utils/util";
 import {error, log, success} from "../utils/log";
 
 const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
@@ -36,7 +36,7 @@ gulp.task('copy-info', async () => {
         const response = await fetch(`https://registry.npmjs.org/${pkg.name}`)
         const res = await response.json() as { "dist-tags": { latest: string } }
         if (res["dist-tags"]) {
-            json.version = autoUpgrade(res["dist-tags"].latest)
+            json.version = compare(pkg.version, res["dist-tags"].latest) < 0 ? autoUpgrade(res["dist-tags"].latest) : pkg.version
         } else {
             log(`获取版本号失败`)
             json.version = pkg.version
@@ -109,7 +109,7 @@ gulp.task('npm-publish', async function () {
     await run(`npm`, ["config", 'get', 'registry'])
     log.warn("npm-whoami")
     await run(`npm`, ["whoami"])
-    success(["npm","publish", ...publishAccess].join(' '))
+    success(["npm", "publish", ...publishAccess].join(' '))
     await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
 });
 

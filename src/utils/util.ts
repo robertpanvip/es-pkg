@@ -11,10 +11,10 @@ export const resolveApp = (relativePath: string) => path.resolve(appDirectory, r
 
 export const pkg = JSON.parse(fs.readFileSync(resolveApp('package.json'), 'utf-8'))
 
-export const getJson=(relativePath: string) =>{
+export const getJson = (relativePath: string) => {
     try {
         return JSON.parse(fs.readFileSync(resolveApp(relativePath), 'utf-8'))
-    }catch(err){
+    } catch (err) {
         return {}
     }
 }
@@ -66,6 +66,34 @@ export async function run(
     //由于execa 的包是esm形式的
     const {execa} = await import("execa")
     return execa(bin, args, {stdio: 'inherit', ...opts})
+}
+
+/**
+ * 版本号比较大小
+ * @param v1
+ * @param v2
+ */
+export const compare: (v1: string, v2: string) => number = (v1, v2) => {
+    if (v1 === v2) {
+        return 0
+    }
+    const arr1 = v1.split(/\D/) as unknown as number[]
+    const arr2 = v2.split(/\D/) as unknown as number[]
+
+    // 默认版本号长度一样
+    for (let i = 0; i < arr1.length;) {
+        // 字符串相减将字符串隐式转成数字
+        if (arr1[i] - arr2[i] > 0) {
+            return 1
+        }
+        if (arr1[i] - arr2[i] < 0) {
+            return -1
+        }
+        if (arr1[i] === arr2[i]) {
+            i++
+        }
+    }
+    return 0;
 }
 
 export const autoUpgrade = (str: string) => {
