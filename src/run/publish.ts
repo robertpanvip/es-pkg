@@ -4,9 +4,9 @@ import logger from 'gulp-logger'
 import fs from "fs"
 import path from "path";
 import {autoUpgrade, config, pkg, remove, run} from "../utils/util";
-import {error, log} from "../utils/log";
+import {error, log, success} from "../utils/log";
 
-const scoped = /^@[a-zA-Z0-9]+\/.+$/;
+const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
 
 gulp.task('clean', async (cb) => {
     log(`清除${config.publishDir}开始`)
@@ -52,11 +52,7 @@ gulp.task('copy-info', async () => {
     let jsonStr = JSON.stringify(json, null, "\t")
     const ex = fs.existsSync(`${config.publishDir}/`)
     if (!ex) {
-        if (scoped.test(pkg.name)) {
-            fs.mkdirSync(`${config.publishDir}/`, {recursive: true})
-        } else {
-            fs.mkdirSync(`${config.publishDir}/`)
-        }
+        fs.mkdirSync(`${config.publishDir}/`, {recursive: true})
     }
     fs.writeFileSync(`${config.publishDir}/package.json`, jsonStr)
     log(`生成 package完成`, chalk.green(json.version))
@@ -113,6 +109,7 @@ gulp.task('npm-publish', async function () {
     await run(`npm`, ["config", 'get', 'registry'])
     log.warn("npm-whoami")
     await run(`npm`, ["whoami"])
+    success(["npm","publish", ...publishAccess].join(''))
     await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
 });
 
