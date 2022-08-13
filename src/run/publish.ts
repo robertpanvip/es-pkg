@@ -38,7 +38,7 @@ gulp.task('copy-info', async () => {
         if (res["dist-tags"]) {
             json.version = compare(pkg.version, res["dist-tags"].latest) < 0 ? autoUpgrade(res["dist-tags"].latest) : pkg.version
         } else {
-            log(`获取版本号失败`)
+            error(`获取版本号失败`)
             json.version = pkg.version
         }
     } catch (e) {
