@@ -1,31 +1,11 @@
 import type {BuildOptions} from 'esbuild'
 import {build} from 'esbuild'
-import fs from 'fs'
 import path from 'path'
-export const resolveApp = (relativePath: string) => path.resolve(fs.realpathSync(process.cwd()), relativePath);
-
-function getAllFiles(root: string) {
-    let res: string[] = [];
-    const files = fs.readdirSync(root);
-    files.forEach(function (file) {
-        const pathname = path.join(root, file);
-        const stat = fs.lstatSync(pathname);
-
-        if (!stat.isDirectory()) {
-            res.push(pathname);
-        } else {
-            res = res.concat(getAllFiles(pathname));
-        }
-    });
-    return res
-}
 
 async function main() {
-    let entryPoints = getAllFiles(path.join(process.cwd(), 'src'));
-    entryPoints = entryPoints.filter(item => item !== path.join(process.cwd(), 'src/build.ts'))
     const buildOptions:BuildOptions ={
         absWorkingDir: process.cwd(),
-        entryPoints,
+        entryPoints:[path.join(process.cwd(), 'run.ts')],
         bundle: false,
         platform: 'node',
         format: 'cjs',
@@ -36,13 +16,6 @@ async function main() {
         ignoreAnnotations: false,
     }
     await build(buildOptions)
-    let res = fs.readFileSync(resolveApp("bin/utils/util.js"), 'utf-8');
-    res = res.replace('Promise.resolve().then(() => __toESM(require("execa")))','import("execa")')
-    fs.writeFileSync('bin/utils/util.js',res,'utf-8')
-
-    let res2 = fs.readFileSync(resolveApp("bin/run/publish.js"), 'utf-8');
-    res2 = res2.replace('Promise.resolve().then(() => __toESM(require("node-fetch")))','import("node-fetch")')
-    fs.writeFileSync('bin/run/publish.js',res2,'utf-8')
 }
 
 main().catch(err => {
