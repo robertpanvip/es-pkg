@@ -30,7 +30,7 @@ gulp.task('del-dist', async (cb) => {
 });
 gulp.task('copy-info', async () => {
     log(`生成 package 开始`)
-    const json: Record<string, string> = pkg;
+    const json: Record<string, string | object> = pkg;
     const {default: fetch} = await import("node-fetch")
     try {
         const response = await fetch(`https://registry.npmjs.org/${pkg.name}`)
@@ -49,6 +49,12 @@ gulp.task('copy-info', async () => {
 
     delete json.devDependencies;
     delete json.scripts;
+    if (!json.publishConfig) {
+        json.publishConfig = {
+            access: "public",
+            registry: "https://registry.npmjs.org/"
+        }
+    }
     let jsonStr = JSON.stringify(json, null, "\t")
     const ex = fs.existsSync(`${config.publishDir}/`)
     if (!ex) {
