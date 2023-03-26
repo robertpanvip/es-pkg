@@ -32,7 +32,7 @@ export function info(content: string, ...rest: any[]) {
 export function error(content: string, ...rest: any[]) {
     const time = getTimestamp();
     process.stdout.write(time + ' ');
-    console.log.apply(chalk.red([content, ...rest]));
+    console.log(chalk.red([content, ...rest]));
 }
 
 log.success = success;

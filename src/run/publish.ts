@@ -10,8 +10,12 @@ const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
 
 gulp.task('clean', async (cb) => {
     log(`清除${config.publishDir}开始`)
-    await remove(config.publishDir);
-    log(`清除${config.publishDir}完成`)
+    try{
+        await remove(config.publishDir);
+        log(`清除${config.publishDir}完成`)
+    }catch (e) {
+        log(`清除${config.publishDir}失败：`,e)
+    }
     cb();
 });
 gulp.task('del-dist', async (cb) => {
@@ -34,12 +38,13 @@ gulp.task('copy-info', async () => {
     const {default: fetch} = await import("node-fetch")
     try {
         const response = await fetch(`https://registry.npmjs.org/${pkg.name}`)
-        const res = await response.json() as { "dist-tags": { latest: string } }
+        const res = await response.json() as { "dist-tags": { latest: string } };
+        log(`远程获取版本信息 tag:`,res["dist-tags"].latest)
         if (res["dist-tags"]) {
             json.version = compare(pkg.version, res["dist-tags"].latest) < 0 ? autoUpgrade(res["dist-tags"].latest) : pkg.version
         } else {
             error(`获取版本号失败`)
-            json.version = pkg.version
+            json.version = pkg.version;
         }
     } catch (e) {
         error(`获取版本号失败`, e)
