@@ -41,7 +41,7 @@ gulp.task('copy-info', async () => {
         const res = await response.json() as { "dist-tags": { latest: string } };
         log(`远程获取版本信息 tag:`,res["dist-tags"].latest)
         if (res["dist-tags"]) {
-            json.version = compare(pkg.version, res["dist-tags"].latest) < 0 ? autoUpgrade(res["dist-tags"].latest) : pkg.version
+            json.version = compare(pkg.version, res["dist-tags"].latest) <= 0 ? autoUpgrade(res["dist-tags"].latest) : pkg.version
         } else {
             error(`获取版本号失败`)
             json.version = pkg.version;
