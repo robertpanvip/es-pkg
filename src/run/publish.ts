@@ -62,6 +62,11 @@ gulp.task('copy-info', async () => {
     }
     fs.writeFileSync(`${config.publishDir}/package.json`, jsonStr)
     log(`生成 package完成`, chalk.green(json.version))
+
+    log(`生成 .npmrc 开始`)
+    fs.writeFileSync(`${config.publishDir}/.npmrc`, `registry=http://registry.npmjs.org`)
+    log(`生成 .npmrc 完成`,)
+
     log(`拷贝 README 开始`)
     return gulp.src([`./README.md`])
         .pipe(logger({
