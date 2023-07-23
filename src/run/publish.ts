@@ -47,6 +47,7 @@ gulp.task('copy-info', async () => {
             json.version = pkg.version;
         }
     } catch (e) {
+
         error(`获取版本号失败`, e)
         throw new Error(`获取版本号失败`)
     }
