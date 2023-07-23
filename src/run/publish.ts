@@ -10,11 +10,11 @@ const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
 
 gulp.task('clean', async (cb) => {
     log(`清除${config.publishDir}开始`)
-    try{
+    try {
         await remove(config.publishDir);
         log(`清除${config.publishDir}完成`)
-    }catch (e) {
-        log(`清除${config.publishDir}失败：`,e)
+    } catch (e) {
+        log(`清除${config.publishDir}失败：`, e)
     }
     cb();
 });
@@ -38,8 +38,11 @@ gulp.task('copy-info', async () => {
     const {default: fetch} = await import("node-fetch")
     try {
         const response = await fetch(`https://registry.npmjs.org/${pkg.name}`)
+        if (response.status === 504) {
+            throw new Error(`获取版本号超时`)
+        }
         const res = await response.json() as { "dist-tags": { latest: string } };
-        log(`远程获取版本信息 tag:`,res["dist-tags"].latest)
+        log(`远程获取版本信息 tag:`, res["dist-tags"].latest)
         if (res["dist-tags"]) {
             json.version = compare(pkg.version, res["dist-tags"].latest) <= 0 ? autoUpgrade(res["dist-tags"].latest) : pkg.version
         } else {
@@ -47,9 +50,8 @@ gulp.task('copy-info', async () => {
             json.version = pkg.version;
         }
     } catch (e) {
-
+        json.version = pkg.version
         error(`获取版本号失败`, e)
-        throw new Error(`获取版本号失败`)
     }
 
 
@@ -122,12 +124,26 @@ gulp.task('npm-publish', async function () {
     if (config.publishAccess) {
         publishAccess = config.publishAccess;
     }
-    log.warn("npm-registry")
-    await run(`npm`, ["config", 'get', 'registry'])
-    log.warn("npm-whoami")
-    await run(`npm`, ["whoami"])
-    success(["npm", "publish", ...publishAccess].join(' '))
-    await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
+
+    const {stdout} = await run(`npm`, ["config", 'get', 'registry'], {
+        stdout: 'pipe',
+        stdio: undefined
+    })
+    log.warn("npm-registry", stdout)
+    if (stdout !== 'http://registry.npmjs.org') {
+        await run(`npm`, ["config", 'set', 'registry', 'http://registry.npmjs.org'])
+        log.warn("npm-registry-reset", 'http://registry.npmjs.org')
+    }
+    try {
+        log.warn("npm-whoami")
+        await run(`npm`, ["whoami"])
+        success(["npm", "publish", ...publishAccess].join(' '))
+        await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
+    } catch (e) {
+        throw e;
+    } finally {
+        await run(`npm`, ["config", 'set', 'registry', stdout])
+    }
 });
 
 export default gulp.series('clean', 'del-dist', 'copy-info', 'copy-dist', 'copy-es', 'copy-lib', 'npm-publish')
