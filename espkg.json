@@ -1,4 +1,5 @@
 {
   "es": "./bin",
-  "lib": "./src"
+  "lib": "./src",
+  "doc": "./doc"
 }

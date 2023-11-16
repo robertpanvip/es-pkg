@@ -38,20 +38,22 @@ gulp.task('copy-info', async () => {
     const {default: fetch} = await import("node-fetch")
     try {
         const response = await fetch(`https://registry.npmjs.org/${pkg.name}`)
-        if (response.status === 504) {
-            throw new Error(`获取版本号超时`)
-        }
-        const res = await response.json() as { "dist-tags": { latest: string } };
-        log(`远程获取版本信息 tag:`, res["dist-tags"].latest)
-        if (res["dist-tags"]) {
-            json.version = compare(pkg.version, res["dist-tags"].latest) <= 0 ? autoUpgrade(res["dist-tags"].latest) : pkg.version
-        } else {
-            error(`获取版本号失败`)
+        const res = await response.json() as { "dist-tags": { latest: string }, "error": string };
+        if (res["error"] === 'Not found') {
+            log(`未获取到远程获取版本信息`, JSON.stringify(res))
             json.version = pkg.version;
+        } else {
+            log(`远程获取版本信息 tag:`, res["dist-tags"].latest)
+            if (res["dist-tags"]) {
+                json.version = compare(pkg.version, res["dist-tags"].latest) <= 0 ? autoUpgrade(res["dist-tags"].latest) : pkg.version
+            } else {
+                error(`获取版本号失败`)
+                json.version = pkg.version;
+            }
         }
     } catch (e) {
-        json.version = pkg.version
         error(`获取版本号失败`, e)
+        throw new Error(`获取版本号失败`)
     }
 
 
@@ -62,6 +64,12 @@ gulp.task('copy-info', async () => {
             access: "public",
             registry: "https://registry.npmjs.org/"
         }
+    }
+    if (!json.main) {
+        json.main = config.es
+    }
+    if(!json.types){
+        json.types = config.es
     }
     let jsonStr = JSON.stringify(json, null, "\t")
     const ex = fs.existsSync(`${config.publishDir}/`)
@@ -87,7 +95,7 @@ gulp.task('copy-info', async () => {
 
 gulp.task('copy-dist', () => {
     log(`拷贝 '/dist/**' 开始`)
-    return gulp.src([`${config.dist}/**`])
+    return gulp.src([`${config.dist}/.**`,`${config.dist}/**`])
         .pipe(logger({
             before: 'copy dist...',
             after: 'copy dist complete!',
@@ -96,7 +104,7 @@ gulp.task('copy-dist', () => {
         .pipe(gulp.dest(path.join(`${config.publishDir}`, config.dist)));
 });
 gulp.task('copy-lib', () => {
-    return gulp.src([`${config.lib}/**`])
+    return gulp.src([`${config.lib}/.**`,`${config.lib}/**`])
         .pipe(logger({
             before: 'copy lib...',
             after: 'copy lib complete!',
@@ -105,7 +113,7 @@ gulp.task('copy-lib', () => {
         .pipe(gulp.dest(path.join(`${config.publishDir}`, config.lib)));
 });
 gulp.task('copy-es', () => {
-    return gulp.src([`${config.es}/**`])
+    return gulp.src([`${config.es}/.**`,`${config.es}/**`])
         .pipe(logger({
             before: 'copy es...',
             after: 'copy es complete!',
@@ -124,26 +132,12 @@ gulp.task('npm-publish', async function () {
     if (config.publishAccess) {
         publishAccess = config.publishAccess;
     }
-
-    const {stdout} = await run(`npm`, ["config", 'get', 'registry'], {
-        stdout: 'pipe',
-        stdio: undefined
-    })
-    log.warn("npm-registry", stdout)
-    if (stdout !== 'http://registry.npmjs.org') {
-        await run(`npm`, ["config", 'set', 'registry', 'http://registry.npmjs.org'])
-        log.warn("npm-registry-reset", 'http://registry.npmjs.org')
-    }
-    try {
-        log.warn("npm-whoami")
-        await run(`npm`, ["whoami"])
-        success(["npm", "publish", ...publishAccess].join(' '))
-        await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
-    } catch (e) {
-        throw e;
-    } finally {
-        await run(`npm`, ["config", 'set', 'registry', stdout])
-    }
+    log.warn("npm-registry")
+    await run(`npm`, ["config", 'get', 'registry'])
+    log.warn("npm-whoami")
+    await run(`npm`, ["whoami"])
+    success(["npm", "publish", ...publishAccess].join(' '))
+    await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
 });
 
 export default gulp.series('clean', 'del-dist', 'copy-info', 'copy-dist', 'copy-es', 'copy-lib', 'npm-publish')

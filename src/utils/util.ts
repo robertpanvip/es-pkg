@@ -1,7 +1,7 @@
-import chalk from 'chalk';// 改变屏幕文字颜色
-import type {Options as ExecaOptions, ExecaReturnValue} from 'execa'
-import del from 'del';
+import chalk from 'chalk'; // 改变屏幕文字颜色
+import type {ExecaReturnValue, Options as ExecaOptions} from 'execa'
 import type {ProgressData} from 'del';
+import del from 'del';
 import path from "path";
 import fs from "fs";
 
@@ -27,6 +27,7 @@ export const config = {
     src: "./src",
     typings: "./typings",
     entry: `./src/index.tsx`,
+    entryCss: [],
     publishDir: `../${pkg.name}-npm`,
     ...esPkgInfo,
 }
@@ -38,6 +39,15 @@ export const titleCase = (str: string) => {
         tmp = tmp.charAt(0).toUpperCase() + tmp.slice(1)
         return tmp
     }).join("")
+}
+
+export const getValidPkgName = (str: string) => {
+    const regex = /\/([\w-]+)$|^([\w-]+)$/;
+    const match = str.match(regex);
+    if (match) {
+        return match[1] || match[2]
+    }
+    return str
 }
 
 /**

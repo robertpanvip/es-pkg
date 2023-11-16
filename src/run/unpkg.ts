@@ -1,4 +1,4 @@
-import {remove, pkg, titleCase, config} from "../utils/util";
+import {remove, pkg, titleCase, config, getValidPkgName} from "../utils/util";
 import {series, parallel} from 'gulp'
 import path from 'path';
 import webpack from 'webpack';
@@ -7,7 +7,8 @@ import WebpackBar from 'webpackbar';
 import {error} from "../utils/log";
 import chalk from "chalk";
 import formatWebpackMessages from "../utils/formatWebpackMessages";
-
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
+import CssMinimizerPlugin from "css-minimizer-webpack-plugin";
 
 function build(config: webpack.Configuration) {
     console.log('Creating an optimized production build...');
@@ -37,7 +38,7 @@ function build(config: webpack.Configuration) {
                 messages = formatWebpackMessages(
                     stats?.toJson({
                         all: true,
-                        assets:true,
+                        assets: true,
                         warnings: true,
                         errors: true
                     })
@@ -77,26 +78,30 @@ function build(config: webpack.Configuration) {
 }
 
 function webpackCompile(minimize: boolean, name: string, callback: Function) {
+    const pkgName=getValidPkgName(pkg.name);
     const plugins = [
         new BundleAnalyzerPlugin({
             analyzerMode: minimize ? 'server' : 'disabled',
         }),
         new webpack.BannerPlugin(`
-${pkg.name} v${pkg.version}
+${pkgName} v${pkg.version}
 Copyright 2021-present.
 All rights reserved.
       `),
         new WebpackBar({
-            name: pkg.name + ":" + name,
+            name: pkgName + ":" + name,
             color: '#2f54eb',
         }),
     ];
+    if (minimize) {
+        plugins.push(new MiniCssExtractPlugin())
+    }
     build({
         entry: config.entry,
         output: {
             path: path.join(process.cwd(), config.dist),
             filename: name,
-            library: titleCase(pkg.name),
+            library: titleCase(pkgName),
             libraryTarget: 'umd'
         },
         resolve: {
@@ -137,11 +142,22 @@ All rights reserved.
                         path.join(process.cwd(), config.src),
                     ]
                 },
+                {
+                    // 用来匹配 .css 结尾的文件
+                    test: /\.css$/,
+                    // use 数组里面 Loader 执行顺序是从右到左
+                    use: [MiniCssExtractPlugin.loader, "css-loader"],
+                },
+                {
+                    test: /\.less$/,
+                    use: [MiniCssExtractPlugin.loader, "css-loader", "less-loader"],
+                },
             ]
         },
         mode: 'production',
         optimization: {
-            minimize: minimize
+            minimize: minimize,
+            minimizer: [new CssMinimizerPlugin()]
         },
         externals: {
             'react': "React",
@@ -195,10 +211,10 @@ const clean = async (done: Function) => {
     done()
 }
 const webpackTask = (done: Function) => {
-    webpackCompile(false, `${pkg.name}.js`, done)
+    webpackCompile(false, `${getValidPkgName(pkg.name)}.js`, done)
 }
 const minimize = (done: Function) => {
-    webpackCompile(true, `${pkg.name}.min.js`, done)
+    webpackCompile(true, `${getValidPkgName(pkg.name)}.min.js`, done)
 }
 
 export default series(clean, parallel(webpackTask, minimize))
