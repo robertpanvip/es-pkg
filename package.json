@@ -17,9 +17,6 @@
     "package",
     "es-pkg"
   ],
-  "files": [
-    "src/defineConfig.ts"
-  ],
   "engines": {
     "node": ">=14.6.0"
   },
