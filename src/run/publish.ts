@@ -3,10 +3,12 @@ import chalk from 'chalk';// 改变屏幕文字颜色
 import logger from 'gulp-logger'
 import fs from "fs"
 import path from "path";
-import {autoUpgrade, compare, config, pkg, remove, run} from "../utils/util";
+import {autoUpgrade, compare, isValidHttp, remove, run} from "../utils/util";
 import {error, log, success} from "../utils/log";
+import {config, pkg} from "../utils/config";
 
 const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
+const REGISTRY = "http://registry.npmjs.org"
 
 gulp.task('clean', async (cb) => {
     log(`清除${config.publishDir}开始`)
@@ -62,13 +64,13 @@ gulp.task('copy-info', async () => {
     if (!json.publishConfig) {
         json.publishConfig = {
             access: "public",
-            registry: "https://registry.npmjs.org/"
+            registry: REGISTRY
         }
     }
     if (!json.main) {
         json.main = config.es
     }
-    if(!json.types){
+    if (!json.types) {
         json.types = config.es
     }
     let jsonStr = JSON.stringify(json, null, "\t")
@@ -78,11 +80,6 @@ gulp.task('copy-info', async () => {
     }
     fs.writeFileSync(`${config.publishDir}/package.json`, jsonStr)
     log(`生成 package完成`, chalk.green(json.version))
-
-    log(`生成 .npmrc 开始`)
-    fs.writeFileSync(`${config.publishDir}/.npmrc`, `registry=http://registry.npmjs.org`)
-    log(`生成 .npmrc 完成`,)
-
     log(`拷贝 README 开始`)
     return gulp.src([`./README.md`])
         .pipe(logger({
@@ -95,7 +92,7 @@ gulp.task('copy-info', async () => {
 
 gulp.task('copy-dist', () => {
     log(`拷贝 '/dist/**' 开始`)
-    return gulp.src([`${config.dist}/.**`,`${config.dist}/**`])
+    return gulp.src([`${config.dist}/.**`, `${config.dist}/**`])
         .pipe(logger({
             before: 'copy dist...',
             after: 'copy dist complete!',
@@ -104,7 +101,7 @@ gulp.task('copy-dist', () => {
         .pipe(gulp.dest(path.join(`${config.publishDir}`, config.dist)));
 });
 gulp.task('copy-lib', () => {
-    return gulp.src([`${config.lib}/.**`,`${config.lib}/**`])
+    return gulp.src([`${config.lib}/.**`, `${config.lib}/**`])
         .pipe(logger({
             before: 'copy lib...',
             after: 'copy lib complete!',
@@ -113,7 +110,7 @@ gulp.task('copy-lib', () => {
         .pipe(gulp.dest(path.join(`${config.publishDir}`, config.lib)));
 });
 gulp.task('copy-es', () => {
-    return gulp.src([`${config.es}/.**`,`${config.es}/**`])
+    return gulp.src([`${config.es}/.**`, `${config.es}/**`])
         .pipe(logger({
             before: 'copy es...',
             after: 'copy es complete!',
@@ -132,12 +129,25 @@ gulp.task('npm-publish', async function () {
     if (config.publishAccess) {
         publishAccess = config.publishAccess;
     }
-    log.warn("npm-registry")
-    await run(`npm`, ["config", 'get', 'registry'])
-    log.warn("npm-whoami")
-    await run(`npm`, ["whoami"])
-    success(["npm", "publish", ...publishAccess].join(' '))
-    await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
+
+    const res = await run(`npm`, ["config", 'get', 'registry'], {stdio: 'pipe'})
+    log.warn("npm-get-registry:", res.stdout)
+    const isHttp = isValidHttp(res.stdout)
+    try {
+        if (isHttp && res.stdout !== REGISTRY) {
+            await run(`npm`, ["config", 'set', 'registry', REGISTRY])
+        }
+        log.warn("npm-whoami")
+        await run(`npm`, ["whoami"])
+        await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
+        success(["npm", "publish", ...publishAccess].join(' '))
+    } catch (e) {
+
+    } finally {
+        if (isHttp && res.stdout !== REGISTRY) {
+            await run(`npm`, ["config", 'set', 'registry', res.stdout])
+        }
+    }
 });
 
 export default gulp.series('clean', 'del-dist', 'copy-info', 'copy-dist', 'copy-es', 'copy-lib', 'npm-publish')

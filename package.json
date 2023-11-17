@@ -2,6 +2,7 @@
   "name": "es-pkg",
   "version": "1.0.0",
   "description": "组件打包工具",
+  "main": "./src/defineConfig.ts",
   "scripts": {
     "test-compile": "esno src/es-pkg.ts compile",
     "test-unpkg": "esno src/es-pkg.ts unpkg",
@@ -15,6 +16,9 @@
   "keywords": [
     "package",
     "es-pkg"
+  ],
+  "files": [
+    "src/defineConfig.ts"
   ],
   "engines": {
     "node": ">=14.6.0"

@@ -2,8 +2,9 @@ import fs from 'fs'
 import path from 'path'
 import {series} from "gulp";
 import * as docGen from "react-docgen-typescript"
-import {config, pkg as packageJSon, step} from "../utils/util";
+import {step} from "../utils/util";
 import {renderTable} from "../utils/md";
+import {config, pkg as packageJSon} from "../utils/config";
 
 async function doc() {
     step('开始生成README文件 ---- ')

@@ -2,35 +2,6 @@ import chalk from 'chalk'; // 改变屏幕文字颜色
 import type {ExecaReturnValue, Options as ExecaOptions} from 'execa'
 import type {ProgressData} from 'del';
 import del from 'del';
-import path from "path";
-import fs from "fs";
-
-const appDirectory = fs.realpathSync(process.cwd());
-
-export const resolveApp = (relativePath: string) => path.resolve(appDirectory, relativePath);
-
-export const pkg = JSON.parse(fs.readFileSync(resolveApp('package.json'), 'utf-8'))
-
-export const getJson = (relativePath: string) => {
-    try {
-        return JSON.parse(fs.readFileSync(resolveApp(relativePath), 'utf-8'))
-    } catch (err) {
-        return {}
-    }
-}
-const esPkgInfo = getJson('espkg.json')
-
-export const config = {
-    lib: "./lib",
-    es: "./es",
-    dist: "./dist",
-    src: "./src",
-    typings: "./typings",
-    entry: `./src/index.tsx`,
-    entryCss: [],
-    publishDir: `../${pkg.name}-npm`,
-    ...esPkgInfo,
-}
 
 export const titleCase = (str: string) => {
     const strArr = str.split(/[_\-]/)
@@ -123,4 +94,9 @@ export const autoUpgrade = (str: string) => {
     }
     autoUpgradeVersion(arr, arr.length - 1);
     return arr.map(it => Number(it)).join('.');
+}
+
+export function isValidHttp(url: string): boolean {
+    const pattern = /^(http|https):\/\/[^\s/$.?#].[^\s]*$/i; // 匹配以http或https开头的连接
+    return pattern.test(url);
 }

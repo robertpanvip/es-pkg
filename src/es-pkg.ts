@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import program from 'commander'
 import pkg from '../package.json'
+import {resolveConfig} from './utils/config';
 import execute from './utils/execute'
 import {log} from "./utils/log";
 
@@ -16,10 +17,12 @@ program.on('--help', help);
 program
     .version(pkg.version)
     .action(async (options, destination) => {
-        if(!destination){
+        if (!destination) {
             help();
             return;
         }
+        //先获取config
+        await resolveConfig();
         const command = destination[0];
         if (command === 'compile') {
             execute((await import('./run/compile')))
@@ -30,7 +33,7 @@ program
         } else if (command === 'doc') {
             execute((await import('./run/doc')))
         } else {
-            log('未知命令',command);
+            log('未知命令', command);
         }
     })
     .parse(process.argv);

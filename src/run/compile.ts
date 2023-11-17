@@ -7,8 +7,9 @@ import gulpSass from "gulp-sass";
 import rename from "gulp-rename";
 import autoPreFixer from "gulp-autoprefixer"
 import Sass from "sass";
-import {config, getJson, remove} from "../utils/util";
+import {remove} from "../utils/util";
 import {error, log} from "../utils/log";
+import {config, getJson} from "../utils/config";
 
 const sass = gulpSass(Sass)
 

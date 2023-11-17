@@ -1,4 +1,4 @@
-import {remove, pkg, titleCase, config, getValidPkgName} from "../utils/util";
+import {remove, titleCase, getValidPkgName} from "../utils/util";
 import {series, parallel} from 'gulp'
 import path from 'path';
 import webpack from 'webpack';
@@ -9,6 +9,7 @@ import chalk from "chalk";
 import formatWebpackMessages from "../utils/formatWebpackMessages";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import CssMinimizerPlugin from "css-minimizer-webpack-plugin";
+import {config, pkg} from "../utils/config";
 
 function build(config: webpack.Configuration) {
     console.log('Creating an optimized production build...');
