@@ -134,25 +134,17 @@ gulp.task('npm-publish', async function () {
     if (config.publishAccess) {
         publishAccess = config.publishAccess;
     }
-
-    const res = await run(`npm`, ["config", 'get', 'registry'], {stdio: 'pipe'})
-    log.warn("npm-get-registry:", res.stdout)
-    const isHttp = isValidHttp(res.stdout)
+    log.warn("npm-whoami")
     try {
-        if (isHttp && res.stdout !== REGISTRY) {
-            await run(`npm`, ["config", 'set', 'registry', REGISTRY])
-        }
-        log.warn("npm-whoami")
-        await run(`npm`, ["whoami"])
-        await run(`npm`, ['publish', ...publishAccess], {cwd: path.join(process.cwd(), config.publishDir)});
-        success(["npm", "publish", ...publishAccess].join(' '))
+        await run(`npm`, ["whoami", '--registry', REGISTRY])
     } catch (e) {
-
-    } finally {
-        if (isHttp && res.stdout !== REGISTRY) {
-            await run(`npm`, ["config", 'set', 'registry', res.stdout])
-        }
+        log.warn("npm未登录！！请登录")
+        await run(`npm`, ["login",'--registry', REGISTRY])
     }
+    await run(`npm`, ['publish', ...publishAccess, '--registry', REGISTRY], {
+        cwd: path.join(process.cwd(), config.publishDir),
+    });
+    success(["npm", "publish", ...publishAccess].join(' '))
 });
 
 export default gulp.series('clean', 'del-dist', 'copy-info', 'copy-dist', 'copy-es', 'copy-lib', 'npm-publish')
