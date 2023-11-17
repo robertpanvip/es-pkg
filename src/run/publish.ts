@@ -3,7 +3,7 @@ import chalk from 'chalk';// 改变屏幕文字颜色
 import logger from 'gulp-logger'
 import fs from "fs"
 import path from "path";
-import {autoUpgrade, compare, isValidHttp, remove, run} from "../utils/util";
+import {autoUpgrade, compare, remove, run} from "../utils/util";
 import {error, log, success} from "../utils/log";
 import {config, pkg} from "../utils/config";
 
