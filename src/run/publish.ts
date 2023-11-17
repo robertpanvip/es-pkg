@@ -8,7 +8,7 @@ import {error, log, success} from "../utils/log";
 import {config, pkg} from "../utils/config";
 
 const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
-const REGISTRY = "http://registry.npmjs.org"
+const REGISTRY = "https://registry.npmjs.org"
 
 gulp.task('clean', async (cb) => {
     log(`清除${config.publishDir}开始`)
