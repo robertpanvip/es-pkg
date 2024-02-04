@@ -36,9 +36,6 @@
   },
   "author": "pan",
   "license": "ISC",
-  "peerDependencies": {
-    "typescript": "4.6.x || 4.7.x || 4.8.x || 4.9.x || 5.0.x || 5.1.x"
-  },
   "devDependencies": {
     "@types/gulp": "^4.0.9",
     "@types/gulp-autoprefixer": "^0.0.33",
@@ -96,10 +93,10 @@
     "typedoc-plugin-missing-exports": "^2.0.1",
     "webpack": "^5.73.0",
     "webpack-bundle-analyzer": "^4.5.0",
-    "webpackbar": "^5.0.2"
+    "webpackbar": "^5.0.2",
+    "glob-watcher": "^6.0.0"
   },
   "resolutions": {
-    "micromatch": "^4.0.5",
-    "glob-watcher": "^6.0.0"
+    "micromatch": "^4.0.5"
   }
 }
