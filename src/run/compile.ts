@@ -1,5 +1,5 @@
 import gulp, {series, parallel} from "gulp";
-import logger from "gulp-logger";
+import logger from "../logger";
 import plumber from "gulp-plumber"
 import ts from "gulp-typescript"
 import babel from "gulp-babel"
@@ -14,10 +14,10 @@ import {config, getJson} from "../utils/config";
 const sass = gulpSass(Sass)
 
 const clean = async () => {
-    log(`清除 dist & es 目录---开始`)
+    log(`清除 ${config.es} & ${config.lib} 目录---开始`)
     await remove(config.es, true);
     await remove(config.lib, true);
-    log(`清除 dist & es 目录---结束`)
+    log(`清除 ${config.es} & ${config.lib} 目录---结束`)
 }
 
 const dealScss = () => {

@@ -40,6 +40,11 @@ export const config = {
 }
 export const resolveConfig = async () => {
     const configPath = resolveApp('espkg.config.ts')
+    const pkgConfigPath = resolveApp('pkg.config.ts')
+    if(isFileExists(pkgConfigPath)){
+        const res = require(configPath)
+        Object.assign(config, res.default)
+    }
     if (isFileExists(configPath)) {
         const res = require(configPath)
         Object.assign(config, res.default)

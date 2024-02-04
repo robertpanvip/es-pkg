@@ -34,36 +34,52 @@ declare module "gulp-babel" {
     export default babel
 }
 
-declare module "gulp-logger" {
-    type Props = {
-        before?: string
-        //The message you want to show before the chunks are shown.
-        after?: string
-        //The message you want to show after the chunks are shown.
-        beforeEach?: string
-        //The message you want to show before each chunk.
-        afterEach?: string
-        //The message you want to show after each chunk.
-        prefix?: string
-        //A constant value to prefix to each filename in the chunk.
-        suffix?: string
-        //A constant value to suffix to each filename in the chunk.
-        extname?: string
-        //A constant value to set as the extension for each filename in the chunk.
-        basename?: string
-        // A constant value to set as the basename for each filename in the chunk.
-        dest?: string
-        //A constant value to set as the dest for each filename in the chunk.
-        colors?: boolean
-        //Whether or not to turn off colors on the output.
-        display?: string
-        //How you want the path of the chunk to show.
-        showChange?: boolean
-    }
-    const res: (props: Props) => NodeJS.ReadWriteStream;
-    export default res
-}
 declare module "*.json" {
     const json: Object;
     export default json
+}
+
+declare module "rename" {
+    export = rename;
+
+    function rename(filepath: string | rename.FileObject, transformer: rename.Transformer): rename.FilePath;
+
+    namespace rename {
+        interface FileObject {
+            // using package's terminology
+            dirname?: string | undefined;
+            basename?: string | undefined;
+            extname?: string | undefined;
+            path?: string | undefined;
+            hash?: string | undefined; // not populated by package
+            origin?: string | undefined;
+        }
+
+        interface Specification {
+            dirname?: string | undefined;
+            prefix?: string | undefined;
+            basename?: string | undefined;
+            suffix?: string | undefined;
+            extname?: string | undefined;
+        }
+
+        type FilePath =
+            | string
+            | Specification;
+
+        type Transformer =
+            | ((spec: FileObject) => FilePath)
+            | FilePath;
+
+        interface ParsedFileObject {
+            dirname: string;
+            extname: string;
+            basename: string;
+            origin: string;
+        }
+
+        function parse(filename: string | Partial<ParsedFileObject>): ParsedFileObject;
+
+        function stringify(obj: FileObject): string;
+    }
 }

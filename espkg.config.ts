@@ -2,5 +2,6 @@ import {defineConfig} from "./src/defineConfig";
 
 export default defineConfig({
     "es": "./bin",
-    "lib": "./src"
+    "lib": "./src",
+    "typings":'./src/defineConfig.ts'
 })

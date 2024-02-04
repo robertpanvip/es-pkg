@@ -1,6 +1,6 @@
 import gulp from 'gulp'
 import chalk from 'chalk';// 改变屏幕文字颜色
-import logger from 'gulp-logger'
+import logger from '../logger'
 import fs from "fs"
 import path from "path";
 import {autoUpgrade, compare, remove, run} from "../utils/util";
@@ -71,7 +71,7 @@ gulp.task('copy-info', async () => {
         json.main = config.es
     }
     if (!json.types) {
-        json.types = config.es
+        json.types = config.typings
     }
     let jsonStr = JSON.stringify(json, null, "\t")
     const ex = fs.existsSync(`${config.publishDir}/`)
