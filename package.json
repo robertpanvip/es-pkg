@@ -11,8 +11,7 @@
     "test-publish-js": "node bin/es-pkg.js publish",
     "publish": "npm run build && esno src/es-pkg.ts publish",
     "test-link": "npm link",
-    "build": "esno build.ts",
-    "preinstall": "npx force-resolutions"
+    "build": "esno build.ts"
   },
   "keywords": [
     "package",
@@ -35,20 +34,20 @@
   "author": "pan",
   "license": "ISC",
   "devDependencies": {
+    "@types/color-support": "^1.1.4",
+    "@types/cross-spawn": "^6.0.2",
     "@types/gulp": "^4.0.9",
     "@types/gulp-autoprefixer": "^0.0.33",
     "@types/gulp-plumber": "^0.0.33",
     "@types/gulp-rename": "^2.0.1",
     "@types/gulp-sass": "^5.0.0",
+    "@types/markdown-escape": "^1.1.0",
     "@types/node": "^18.0.0",
     "@types/pretty-time": "^1.1.2",
-    "@types/webpack-bundle-analyzer": "^4.4.1",
-    "typescript": "^4.7.4",
-    "@types/color-support": "^1.1.4",
-    "@types/cross-spawn": "^6.0.2",
-    "@types/markdown-escape": "^1.1.0",
     "@types/react": "^18.2.17",
-    "@types/through2": "^2.0.41"
+    "@types/through2": "^2.0.41",
+    "@types/webpack-bundle-analyzer": "^4.4.1",
+    "typescript": "^4.7.4"
   },
   "dependencies": {
     "@babel/core": "^7.18.6",
@@ -56,6 +55,7 @@
     "@babel/preset-env": "^7.18.6",
     "@babel/preset-react": "^7.18.6",
     "@babel/preset-typescript": "^7.18.6",
+    "@types/glob-watcher": "^5.0.5",
     "babel-loader": "^8.2.5",
     "babel-plugin-transform-remove-console": "^6.9.4",
     "chalk": "^4.1.0",
@@ -67,7 +67,6 @@
     "esbuild": "^0.14.48",
     "esno": "^0.16.3",
     "execa": "^6.1.0",
-    "gulp": "^4.0.2",
     "gulp-autoprefixer": "^8.0.0",
     "gulp-babel": "^8.0.0",
     "gulp-plumber": "^1.2.1",

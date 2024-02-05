@@ -1,5 +1,5 @@
 import {remove, titleCase, getValidPkgName} from "../utils/util";
-import {series, parallel} from 'gulp'
+import {series, parallel} from '../gulp'
 import path from 'path';
 import webpack from 'webpack';
 import {BundleAnalyzerPlugin} from 'webpack-bundle-analyzer';
@@ -80,7 +80,7 @@ function build(config: webpack.Configuration) {
 
 function webpackCompile(minimize: boolean, name: string, callback: Function) {
     const pkgName=getValidPkgName(pkg.name);
-    const plugins = [
+    const plugins:webpack.WebpackPluginInstance[] = [
         new BundleAnalyzerPlugin({
             analyzerMode: minimize ? 'server' : 'disabled',
         }),

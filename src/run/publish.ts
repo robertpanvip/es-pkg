@@ -1,11 +1,11 @@
-import gulp from 'gulp'
+import gulp from '../gulp'
 import chalk from 'chalk';// 改变屏幕文字颜色
 import logger from '../logger'
 import fs from "fs"
 import path from "path";
-import { autoUpgrade, compare, remove, run } from "../utils/util";
-import { error, log, success } from "../utils/log";
-import { config, pkg } from "../utils/config";
+import {autoUpgrade, compare, remove, run} from "../utils/util";
+import {error, log, success} from "../utils/log";
+import {config, pkg} from "../utils/config";
 
 const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
 const REGISTRY = "https://registry.npmjs.org"
@@ -37,7 +37,7 @@ gulp.task('del-dist', async (cb) => {
 gulp.task('copy-info', async () => {
     log(`生成 package 开始`)
     const json: Record<string, string | object> = pkg;
-    const { default: fetch } = await import("node-fetch")
+    const {default: fetch} = await import("node-fetch")
     try {
         const response = await fetch(`https://registry.npmjs.org/${pkg.name}`)
         const res = await response.json() as { "dist-tags": { latest: string }, "error": string };
@@ -55,7 +55,6 @@ gulp.task('copy-info', async () => {
         }
     } catch (e) {
         error(`获取版本号失败`, e)
-        throw new Error(`获取版本号失败`)
     }
 
     delete json.devDependencies;
@@ -72,16 +71,10 @@ gulp.task('copy-info', async () => {
     if (!json.types) {
         json.types = config.typings
     }
-    if (json.resolutions) {
-        json.scripts = {
-            ...(json.scripts as object || {}),
-            preinstall: "npx force-resolutions"
-        }
-    }
     let jsonStr = JSON.stringify(json, null, "\t")
     const ex = fs.existsSync(`${config.publishDir}/`)
     if (!ex) {
-        fs.mkdirSync(`${config.publishDir}/`, { recursive: true })
+        fs.mkdirSync(`${config.publishDir}/`, {recursive: true})
     }
     fs.writeFileSync(`${config.publishDir}/package.json`, jsonStr)
     log(`生成 package完成`, chalk.green(json.version))
@@ -139,16 +132,16 @@ gulp.task('npm-publish', async function () {
     if (config.publishAccess) {
         publishAccess = config.publishAccess;
     }
-    log.warn("npm-whoami")
     try {
-        await run(`npm`, ["whoami", '--registry', REGISTRY])
+        const {stdout} = await run(`npm`, ["whoami", '--registry', REGISTRY], {stdio: undefined})
+        log.warn(`===npm登录信息===>${stdout}`)
     } catch (e) {
-        log.warn("npm未登录！！请登录")
+        log.warn("===npm未登录！！请登录")
         await run(`npm`, ["login", '--registry', REGISTRY])
     }
-    await run(`npm`, ['publish', ...publishAccess, '--registry', REGISTRY], {
-        cwd: path.join(process.cwd(), config.publishDir),
-    });
+    /* await run(`npm`, ['publish', ...publishAccess, '--registry', REGISTRY], {
+         cwd: path.join(process.cwd(), config.publishDir),
+     });*/
     success(["npm", "publish", ...publishAccess].join(' '))
 });
 

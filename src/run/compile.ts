@@ -1,4 +1,4 @@
-import gulp, {series, parallel} from "gulp";
+import gulp, {series, parallel} from "../gulp";
 import logger from "../logger";
 import plumber from "gulp-plumber"
 import ts from "gulp-typescript"
