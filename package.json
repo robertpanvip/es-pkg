@@ -11,7 +11,8 @@
     "test-publish-js": "node bin/es-pkg.js publish",
     "publish": "npm run build && esno src/es-pkg.ts publish",
     "test-link": "npm link",
-    "build": "esno build.ts"
+    "build": "esno build.ts",
+    "preinstall": "npx force-resolutions"
   },
   "keywords": [
     "package",
@@ -33,9 +34,6 @@
   },
   "author": "pan",
   "license": "ISC",
-  "peerDependencies": {
-    "typescript": "4.6.x || 4.7.x || 4.8.x || 4.9.x || 5.0.x || 5.1.x"
-  },
   "devDependencies": {
     "@types/gulp": "^4.0.9",
     "@types/gulp-autoprefixer": "^0.0.33",
