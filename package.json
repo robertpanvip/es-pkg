@@ -11,14 +11,12 @@
     "test-publish-js": "node bin/es-pkg.js publish",
     "publish": "npm run build && esno src/es-pkg.ts publish",
     "test-link": "npm link",
-    "build": "esno build.ts"
+    "build": "esno build.ts",
+    "preinstall": "npx force-resolutions"
   },
   "keywords": [
     "package",
     "es-pkg"
-  ],
-  "files": [
-    "./src/defineConfig.ts"
   ],
   "engines": {
     "node": ">=14.6.0"
