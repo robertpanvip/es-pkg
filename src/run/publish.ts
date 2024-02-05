@@ -139,9 +139,9 @@ gulp.task('npm-publish', async function () {
         log.warn("===npm未登录！！请登录")
         await run(`npm`, ["login", '--registry', REGISTRY])
     }
-    /* await run(`npm`, ['publish', ...publishAccess, '--registry', REGISTRY], {
+     await run(`npm`, ['publish', ...publishAccess, '--registry', REGISTRY], {
          cwd: path.join(process.cwd(), config.publishDir),
-     });*/
+     });
     success(["npm", "publish", ...publishAccess].join(' '))
 });
 
