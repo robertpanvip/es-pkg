@@ -1,5 +1,5 @@
 import chalk from 'chalk';// 改变屏幕文字颜色
-import type {Gulp} from 'gulp'
+import type { Gulp } from '../gulp'
 import log from "./log";
 import formatError from "./format-error";
 import prettyTime from "pretty-time"
