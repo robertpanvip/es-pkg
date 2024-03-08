@@ -2,6 +2,7 @@ import gulp, {series, parallel} from "../gulp";
 import logger from "../logger";
 import plumber from "gulp-plumber"
 import ts from "gulp-typescript"
+import typescript from "typescript"
 import babel from "gulp-babel"
 import gulpSass from "gulp-sass";
 import rename from "gulp-rename";
@@ -9,7 +10,7 @@ import autoPreFixer from "gulp-autoprefixer"
 import Sass from "sass";
 import {remove} from "../utils/util";
 import {error, log} from "../utils/log";
-import {config, getJson} from "../utils/config";
+import {config, getJson, resolveApp} from "../utils/config";
 
 const sass = gulpSass(Sass)
 
@@ -56,7 +57,10 @@ const copyScssToLib = () => {
         .pipe(gulp.dest(config.lib));
 }
 const compileEs = () => {
-    const {compilerOptions = {}} = getJson('tsconfig.json');
+    const tsConfig = typescript.readConfigFile(resolveApp('tsconfig.json'), typescript.sys.readFile);
+    if (tsConfig.error) {
+        console.log(tsConfig.error.messageText);
+    }
     return gulp.src([
         `${config.src}/**/*.tsx`,
         `${config.src}/**/*.ts`,
@@ -69,16 +73,15 @@ const compileEs = () => {
         showChange: false,
     }))
         .pipe(ts({
-            "rootDir": '../',
+            "jsx": "react",
             "noImplicitAny": true,
+            ...tsConfig.config.compilerOptions,
             "removeComments": false,
             "declaration": true,
             "esModuleInterop": true,
             "resolveJsonModule": true,
             "target": "esnext",
-            "jsx": "react",
             "moduleResolution": 'node',
-            ...compilerOptions,
         }))
         .on('error', () => null)
         .pipe(logger({
