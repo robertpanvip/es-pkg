@@ -2,9 +2,8 @@ import Undertaker from 'undertaker';
 import vfs from 'vinyl-fs';
 import * as fs from "fs";
 import watch from 'glob-watcher';
-import type {Globs, WatchOptions} from "gulp";
-
-class Gulp extends Undertaker {
+import type { Globs, WatchOptions } from "gulp";
+export class Gulp extends Undertaker {
     src = vfs.src;
     dest = vfs.dest;
     symlink = vfs.symlink;
@@ -29,7 +28,7 @@ class Gulp extends Undertaker {
 
     watch(globs: Globs, opts?: WatchOptions, fn?: Undertaker.TaskFunction): fs.FSWatcher;
 
-    watch(glob:Globs, opt?:Undertaker.TaskFunction|WatchOptions, task?:Undertaker.TaskFunction){
+    watch(glob: Globs, opt?: Undertaker.TaskFunction | WatchOptions, task?: Undertaker.TaskFunction) {
         if (typeof opt === 'string' || typeof task === 'string' ||
             Array.isArray(opt) || Array.isArray(task)) {
             throw new Error('watching ' + glob + ': watch task has to be ' +

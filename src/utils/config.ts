@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import {pathToFileURL} from "node:url";
 import path from "node:path";
 
 const appDirectory = fs.realpathSync(process.cwd());
@@ -41,7 +40,7 @@ export const config = {
 export const resolveConfig = async () => {
     const configPath = resolveApp('espkg.config.ts')
     const pkgConfigPath = resolveApp('pkg.config.ts')
-    if(isFileExists(pkgConfigPath)){
+    if (isFileExists(pkgConfigPath)) {
         const res = require(pkgConfigPath)
         Object.assign(config, res.default)
     }

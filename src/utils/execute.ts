@@ -1,8 +1,8 @@
-import gulpInst from 'gulp'
+import gulpInst from '../gulp'
 import type Undertaker from 'undertaker'
-import type {Gulp} from 'gulp'
-import {logEvents, logSyncTask} from "./task";
-import {error} from "./log";
+import type { Gulp } from '../gulp'
+import { logEvents, logSyncTask } from "./task";
+import { error } from "./log";
 
 function registerExports(gulpInst: Gulp, tasks: Record<string, Undertaker.TaskFunction>) {
     const taskNames = Object.keys(tasks);
@@ -41,7 +41,7 @@ function exit(code: number) {
 export default function execute(exported: Record<string, Undertaker.TaskFunction> | Undertaker.TaskFunction, toRun = ['default']) {
     if (typeof exported === 'function') {
         const taskName = exported.displayName || exported.name || 'default';
-        exported = {[taskName]: exported}
+        exported = { [taskName]: exported }
         toRun = [taskName]
     }
     logEvents(gulpInst);
