@@ -10,7 +10,7 @@ import autoPreFixer from "gulp-autoprefixer"
 import Sass from "sass";
 import {remove} from "../utils/util";
 import {error, log} from "../utils/log";
-import {config, getJson, resolveApp} from "../utils/config";
+import {config, resolveApp} from "../utils/config";
 
 const sass = gulpSass(Sass)
 
@@ -33,7 +33,7 @@ const dealScss = () => {
             .pipe(gulp.dest(dest))
     }
     const compileScss = () => {
-        return gulp.src(`${config.src}/**/*.scss`)
+        return gulp.src([`${config.src}/**/*.scss`])
             .pipe(sass({outputStyle: 'compressed', outFile: 'xx'}).on('error', sass.logError))
             .pipe(autoPreFixer())
             .pipe(rename((path) => {
@@ -47,7 +47,7 @@ const dealScss = () => {
 
 
 const copyScssToLib = () => {
-    return gulp.src(`${config.src}/**/*.scss`)
+    return gulp.src([`${config.src}/**/*.scss`,`${config.src}/**/*.less`])
         .pipe(logger({
             before: 'copyScssToLib...',
             after: 'copyScssToLib complete!',
@@ -62,28 +62,38 @@ const compileEs = () => {
         console.log(tsConfig.error.messageText);
     }
     return gulp.src([
-        `${config.src}/**/*.tsx`,
-        `${config.src}/**/*.ts`,
-        `${config.typings}/**/*.ts`,
+        `${config.src}/**/*`,
+        `${config.typings}/**/*`,
         `!${config.src}/**/__test__/!**`,
-    ]).pipe(logger({
-        before: 'generate ...es ...',
-        after: 'generate ...es complete!',
-        extname: '.ts',
-        showChange: false,
-    }))
+    ])
+        .pipe(logger({
+            before: 'generate ...es ...',
+            after: 'generate ...es complete!',
+            extname: '.ts',
+            showChange: false,
+        }))
         .pipe(ts({
             "jsx": "react",
             "noImplicitAny": true,
             ...tsConfig.config.compilerOptions,
+            "module": "esnext",
+            "target": "esnext",
+            "newLine": 'crlf',
+            "allowImportingTsExtensions": false,
+            "baseUrl": "./",
+            "isolatedModules": false,
             "removeComments": false,
             "declaration": true,
+            "noEmit": false,
             "esModuleInterop": true,
             "resolveJsonModule": true,
-            "target": "esnext",
+            "skipLibCheck":true,
             "moduleResolution": 'node',
         }))
-        .on('error', () => null)
+        .on('error', (e) => {
+            console.error(e)
+            throw e;
+        })
         .pipe(logger({
             before: 'writing to es...',
             after: 'write  complete!',
@@ -92,6 +102,10 @@ const compileEs = () => {
             display: 'name'
         }))
         .pipe(plumber())
+        .pipe(gulp.dest(config.es))
+        .pipe(gulp.src([
+            `${config.src}/**/*.json`,
+        ]))
         .pipe(gulp.dest(config.es));
 }
 const copyTds = () => {

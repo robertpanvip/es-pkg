@@ -35,6 +35,7 @@ export const config = {
     entry: `./src/index.tsx`,
     entryCss: [],
     publishDir: `../${pkg.name}-npm`,
+    doc: 'README',
     ...esPkgInfo,
 }
 export const resolveConfig = async () => {

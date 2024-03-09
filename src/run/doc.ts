@@ -1,45 +1,32 @@
 import fs from 'fs'
 import path from 'path'
 import {series} from "../gulp";
-import * as docGen from "react-docgen-typescript"
-import {step} from "../utils/util";
-import {renderTable} from "../utils/md";
+import docGen from "@es-pkg/doc"
 import {config, pkg as packageJSon} from "../utils/config";
+import log from "../utils/log";
+//[![NPM Version](https://img.shields.io/npm/v/${packageJSon.name}?color=33cd56&logo=npm)](https://www.npmjs.com/package/${packageJSon.name})
+const cwd = process.cwd();
 
 async function doc() {
-    step('开始生成README文件 ---- ')
-    let docs = docGen.parse(config.entry, {
-        savePropValueAsString: true,
-    });
-
-    fs.unlinkSync('./README.md')
-    const _docs = docs.map(doc => {
-        return renderTable(doc)
-    })
-    let cssInject = '';
-    if (Array.isArray(config.entryCss) && config.entryCss.length !== 0 || !Array.isArray(config.entryCss) && config.entryCss) {
-        cssInject = `> Note: \`import "${packageJSon.name}/lib/index.scss"\``
+    const file = path.join(cwd, config.entry || config.src);
+    const start = Date.now();
+    const docName = config.doc.outName || "README"
+    log('开始生成README文件 ---- ')
+    try {
+        fs.unlinkSync(path.join(cwd, `${docName}.md`))
+    } catch (e) {
     }
-    const _md = `
-# ${packageJSon.name}
-
-${packageJSon.description}.
-
-[![NPM Version](https://img.shields.io/npm/v/${packageJSon.name}?color=33cd56&logo=npm)](https://www.npmjs.com/package/${packageJSon.name})
-
-📦 **Installation**
-\`\`\` javascript
-npm install ${packageJSon.name}
-\`\`\`
-🔨 **Usage**
-
-${cssInject}
-see demo
-
-${_docs.join('\n')}
-`
-    fs.writeFileSync(path.join(process.cwd(), '/README.md'), _md)
-    step('已成功生成README文件')
+    docGen({
+        name: packageJSon.name,
+        desc: packageJSon.description,
+        tsconfig: path.join(cwd, './tsconfig.json'),
+        entry: file,
+        outDir: path.join(cwd, './'),
+        outType: "md",
+        outName: docName,
+        ...(typeof config.doc==='string'?{}:config.doc),
+    })
+    log(`已成功生成${docName}文件`)
 }
 
 export default series(doc)
