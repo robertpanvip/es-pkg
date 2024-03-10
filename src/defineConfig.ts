@@ -3,7 +3,9 @@ import {pkg} from "./utils/config";
 import path from 'node:path'
 
 const cwd = process.cwd();
-
+/**
+ * EsPkg配置
+ */
 export interface EsPkgConfig {
     /** lib 目录 @default 默认为./lib */
     lib?: string,
@@ -23,6 +25,9 @@ export interface EsPkgConfig {
     /** md文档名称 @default 默认为 README */
     doc?: string | Partial<DocOptions>,
 }
+/**
+ * 配置自定义
+ */
 export const defineConfig = (config: EsPkgConfig) => {
     if (typeof config.doc === 'string') {
         config.doc = {
