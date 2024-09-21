@@ -1,0 +1,40 @@
+{
+  "name": "@es-pkg/publish",
+  "version": "1.0.0",
+  "description": "组件打包工具",
+  "main": "./src/index",
+  "scripts": {
+    "compile": "npm run typecheck && es-pkg compile",
+    "iife": "es-pkg iife",
+    "doc": "es-pkg doc",
+    "publish": "es-pkg publish",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=14.6.0"
+  },
+  "homepage": "https://github.com/robertpanvip/es-pkg.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robertpanvip/es-pkg.git"
+  },
+  "bugs": {
+    "url": "https://github.com/robertpanvip/es-pkg/issues"
+  },
+  "author": "pan",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/prompts": "^2.4.9",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "chalk": "^5.0.1",
+    "prompts": "^2.4.2",
+    "node-fetch": "latest",
+    "@es-pkg/gulp-logger": "file://..gulp-logger",
+    "@es-pkg/gulp": "file://..gulp",
+    "@es-pkg/utils": "file://..utils",
+    "@es-pkg/config": "file://..config"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "name": "@es-pkg/iife",
+  "version": "1.0.0",
+  "description": "gulp iife打包",
+  "main": "src/index",
+  "scripts": {
+    "compile": "npm run typecheck && es-pkg compile",
+    "iife": "es-pkg iife",
+    "doc": "es-pkg doc",
+    "publish": "es-pkg publish",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "babel-loader": "^8.2.5",
+    "mini-css-extract-plugin": "^2.7.6",
+    "babel-plugin-transform-remove-console": "^6.9.4",
+    "chalk": "^5.0.1",
+    "@babel/core": "^7.18.6",
+    "@babel/plugin-transform-runtime": "^7.18.6",
+    "@babel/preset-env": "^7.18.6",
+    "@babel/preset-react": "^7.18.6",
+    "@babel/preset-typescript": "^7.18.6",
+    "webpack": "^5.73.0",
+    "webpack-bundle-analyzer": "^4.5.0",
+    "webpackbar": "^5.0.2",
+    "css-minimizer-webpack-plugin": "latest",
+    "@types/webpack-bundle-analyzer": "latest",
+    "@es-pkg/gulp": "file://..gulp",
+    "@es-pkg/utils": "file://..utils",
+    "@es-pkg/config": "file://..config"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.30.4",
+    "@typescript-eslint/parser": "^5.30.4",
+    "eslint": "^8.19.0",
+    "typescript": "^4.7.4"
+  },
+  "keywords": [
+    "gulp-iife"
+  ],
+  "homepage": "https://github.com/robertpanvip/@es-pkg/execute.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robertpanvip/@es-pkg/execute.git"
+  },
+  "bugs": {
+    "url": "https://github.com/robertpanvip/@es-pkg/execute/issues"
+  },
+  "author": "pan",
+  "license": "ISC"
+}

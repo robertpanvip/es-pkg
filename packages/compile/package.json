@@ -1,0 +1,51 @@
+{
+  "name": "@es-pkg/compile",
+  "version": "1.0.0",
+  "description": "组件打包工具",
+  "main": "./src/index",
+  "scripts": {
+    "compile": "npm run typecheck && es-pkg compile",
+    "iife": "es-pkg iife",
+    "doc": "es-pkg doc",
+    "publish": "es-pkg publish",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "package",
+    "es-pkg"
+  ],
+  "engines": {
+    "node": ">=14.6.0"
+  },
+  "homepage": "https://github.com/robertpanvip/es-pkg.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robertpanvip/es-pkg.git"
+  },
+  "bugs": {
+    "url": "https://github.com/robertpanvip/es-pkg/issues"
+  },
+  "author": "pan",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/gulp-autoprefixer": "^0.0.33",
+    "@types/gulp-plumber": "^0.0.33",
+    "@types/gulp-rename": "^2.0.1",
+    "@types/gulp-sass": "^5.0.0",
+    "@types/node": "^18.0.0",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "gulp-autoprefixer": "^8.0.0",
+    "gulp-babel": "^8.0.0",
+    "gulp-sass": "^5.1.0",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "gulp-plumber": "latest",
+    "gulp-rename": "latest",
+    "sass": "^1.53.0",
+    "@es-pkg/gulp": "file://..gulp",
+    "@es-pkg/gulp-logger": "file://..gulp-logger",
+    "@es-pkg/utils": "file://..utils",
+    "@es-pkg/config": "file://..config"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "name": "es-pkg",
+  "version": "1.0.28",
+  "description": "组件打包工具",
+  "main": "./src/defineConfig",
+  "scripts": {
+    "main-compile": "esno src/index.ts compile",
+    "main-iife": "esno src/index.ts iife",
+    "main-doc": "esno src/index.ts doc",
+    "main-publish": "esno src/index.ts publish",
+    "main-publish-js": "node bin/es-pkg.js publish",
+    "publish": "npm run build && esno src/index.ts publish",
+    "test-link": "npm link",
+    "build": "esno build.ts"
+  },
+  "keywords": [
+    "package",
+    "es-pkg"
+  ],
+  "engines": {
+    "node": ">=14.6.0"
+  },
+  "bin": {
+    "es-pkg": "bin/run.js"
+  },
+  "homepage": "https://github.com/robertpanvip/es-pkg.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robertpanvip/es-pkg.git"
+  },
+  "bugs": {
+    "url": "https://github.com/robertpanvip/es-pkg/issues"
+  },
+  "author": "pan",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/prompts": "^2.4.9",
+    "esbuild": "^0.14.48",
+    "typescript": "^4.7.4",
+    "@typescript-eslint/eslint-plugin": "^5.30.4",
+    "@typescript-eslint/parser": "^5.30.4",
+    "eslint": "^8.19.0"
+  },
+  "dependencies": {
+    "@es-pkg/doc": "latest",
+    "commander": "^6.1.0",
+    "esno": "latest",
+    "@es-pkg/gulp-logger": "file://..gulp-logger",
+    "@es-pkg/gulp": "file://..gulp",
+    "@es-pkg/utils": "file://..utils",
+    "@es-pkg/config": "file://..config",
+    "@es-pkg/execute": "file://..gulp-execute",
+    "@es-pkg/iife": "file://..iife",
+    "@es-pkg/compile": "file://..compile",
+    "@es-pkg/publish": "file://..publish"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "@es-pkg/utils",
+  "version": "1.0.0",
+  "description": "gulp node执行",
+  "main": "src/index",
+  "scripts": {
+    "compile": "npm run typecheck && es-pkg compile",
+    "iife": "es-pkg iife",
+    "doc": "es-pkg doc",
+    "publish": "es-pkg publish",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "chalk": "^5.0.1",
+    "execa": "^6.1.0",
+    "del": "^7.1.0",
+    "time-stamp": "^2.2.0"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.30.4",
+    "@typescript-eslint/parser": "^5.30.4",
+    "eslint": "^8.19.0",
+    "typescript": "^4.7.4"
+  },
+  "keywords": [
+    "gulp-utils"
+  ],
+  "homepage": "https://github.com/robertpanvip/es-pkg.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robertpanvip/es-pkg.git"
+  },
+  "bugs": {
+    "url": "https://github.com/robertpanvip/es-pkg/issues"
+  },
+  "author": "pan",
+  "license": "ISC"
+}
