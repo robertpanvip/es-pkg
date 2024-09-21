@@ -4,7 +4,6 @@
   "description": "组件打包工具",
   "main": "./src/defineConfig",
   "scripts": {
-    "main-compile": "esno src/index.ts compile",
     "main-iife": "esno src/index.ts iife",
     "main-doc": "esno src/index.ts doc",
     "main-publish": "esno src/index.ts publish",

@@ -39,7 +39,7 @@ export const config: Required<EsPkgConfig> & { include: string[] } = {
     entryCss: [],
     publishDir: `./npm`,
     doc: 'README',
-    removeCompiled:true,
+    removeCompiled: true,
     ...esPkgInfo,
 }
 export const resolveConfig = async () => {
@@ -88,24 +88,28 @@ export function getIndexFilePath(_path: string) {
             return getRelativeToNpm(valid)
         }
     } else {
-        console.error('not fount entry:'+_path);
-        return  _path
+        console.error('not fount entry:' + _path);
+        return ""
     }
 }
 
 
-export function getEntrypoint(_dir: string) {
+export function getEntrypoint(_dir: string, entry = config.entry) {
     const include = getTsconfigIncludeFiles()
     const appPath = resolveApp("");
     // 获取相对路径
-    const entryPath = path.relative(appPath, resolveApp(config.entry));
+    const entryPath = path.relative(appPath, resolveApp(entry));
+    const filePath = getIndexFilePath(path.join(config.publishDir, entryPath))
+    if (filePath) {
+        return filePath.split(path.sep).join('/')
+    }
     let _path;
     if (include.length > 1) {
         _path = entryPath
     } else {
         const arr = entryPath.split(path.sep);
         arr.shift();
-        _path = arr.join(path.sep)
+        _path = arr.join(path.sep);
     }
     const res = getIndexFilePath(path.join(_dir, _path))
     return res.split(path.sep).join('/')

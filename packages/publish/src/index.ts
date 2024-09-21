@@ -14,7 +14,7 @@ const json: Record<string, string | object> = pkg;
 
 const publishDir = path.join(config.publishDir, './__npm__')
 
-gulp.task('clean', async (cb) => {
+gulp.task('clean', async () => {
     log(`清除${publishDir}开始`)
     try {
         await remove(publishDir);
@@ -22,9 +22,8 @@ gulp.task('clean', async (cb) => {
     } catch (e) {
         log(`清除${publishDir}失败：`, e)
     }
-    cb();
 });
-gulp.task('del-cjs-iife-es', async (cb) => {
+gulp.task('del-cjs-iife-es', async () => {
     log(`删除 ${path.join(`${publishDir}`, config.iife)} 开始`)
     await remove(`${path.join(`${publishDir}`, config.iife)}`);
     log(`删除 ${path.join(`${publishDir}`, config.iife)} 结束`)
@@ -36,9 +35,8 @@ gulp.task('del-cjs-iife-es', async (cb) => {
     log(`删除 ${path.join(`${publishDir}`, config.es)} 开始`)
     await remove(`${path.join(`${publishDir}`, config.es)}`);
     log(`删除 ${path.join(`${publishDir}`, config.es)} 结束`)
-    cb();
 });
-gulp.task('copy-info', async () => {
+gulp.task('copy-info', series(async () => {
     log(`生成 package 开始`);
     const controller = new AbortController();
     const {default: fetch} = await import("node-fetch");
@@ -94,22 +92,24 @@ gulp.task('copy-info', async () => {
     const browserExists = !!json.browser && fs.existsSync(path.join(resolveApp(''), json.main as string))
     const moduleExists = !!json.module && fs.existsSync(path.join(resolveApp(''), json.main as string))
 
+    const _es = getEntrypoint(config.es)
+    const _cjs = getEntrypoint(config.cjs)
     if (!mainExists) {
         if (ESExists) {
-            json.main = getEntrypoint(config.es)
+            json.main = _es || _cjs
         }
         if (CJSExists) {
-            json.main = getEntrypoint(config.cjs)
+            json.main = _cjs || _es;
         }
     }
     if (!moduleExists && CJSExists) {
-        json.module = getEntrypoint(config.es)
+        json.module = getEntrypoint(config.es) || _es || _cjs
     }
     if (!browserExists && IIFEExists) {
         json.browser = getEntrypoint(config.iife)
     }
     if (!json.types) {
-        json.types = path.basename(config.typings)
+        json.types = getEntrypoint(config.es, config.typings) || _es || _cjs
     }
     json.files = [ESExists && es, CJSExists && cjs, IIFEExists && iife].filter(Boolean)
 
@@ -133,14 +133,15 @@ gulp.task('copy-info', async () => {
     log(`生成 .npmrc 完成`,)
 
     log(`拷贝 README 开始`)
-    return gulp.src([`./README.md`], {allowEmpty: true})
+}, () => {
+    return gulp.src([`./README.md`])
         .pipe(logger({
             before: 'copy README...',
             after: 'copy README complete!',
             showChange: false
         }))
-        .pipe(gulp.dest(`${publishDir}/`));
-});
+        .pipe(gulp.dest(`${publishDir}/`))
+}));
 
 gulp.task('copy-iife', () => {
     log(`拷贝 '/iife/**' 开始`)
@@ -178,7 +179,7 @@ gulp.task('remove-__npm__', series(() => {
     }
     return Promise.all(promises)
 }, () => {
-    return gulp.src([`${publishDir}/.**`, `${publishDir}/**`])
+    return gulp.src([`${publishDir}/**`, `${publishDir}/.**`])
         .pipe(logger({
             before: 'copy __npm__...',
             after: 'copy __npm__ complete!',

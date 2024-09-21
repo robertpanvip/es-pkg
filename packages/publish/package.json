@@ -4,10 +4,10 @@
   "description": "组件打包工具",
   "main": "./src/index",
   "scripts": {
-    "compile": "npm run typecheck && es-pkg compile",
-    "iife": "es-pkg iife",
-    "doc": "es-pkg doc",
-    "publish": "es-pkg publish",
+    "publish-compile": "npm run typecheck && es-pkg compile",
+    "publish-iife": "es-pkg iife",
+    "publish-doc": "es-pkg doc",
+    "publish-publish": "es-pkg publish",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

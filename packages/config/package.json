@@ -4,10 +4,10 @@
   "description": "gulp 配置",
   "main": "src/index",
   "scripts": {
-    "compile": "npm run typecheck && es-pkg compile",
-    "iife": "es-pkg iife",
-    "doc": "es-pkg doc",
-    "publish": "es-pkg publish",
+    "config-compile": "npm run typecheck && es-pkg compile",
+    "config-iife": "es-pkg iife",
+    "config-doc": "es-pkg doc",
+    "config-publish": "es-pkg publish",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
