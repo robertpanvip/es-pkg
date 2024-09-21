@@ -39,6 +39,7 @@ export const config: Required<EsPkgConfig> & { include: string[] } = {
     entryCss: [],
     publishDir: `./npm`,
     doc: 'README',
+    removeCompiled:true,
     ...esPkgInfo,
 }
 export const resolveConfig = async () => {

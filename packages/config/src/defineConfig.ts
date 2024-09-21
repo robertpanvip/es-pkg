@@ -3,6 +3,7 @@ import {pkg} from "./index";
 import path from 'node:path'
 
 const cwd = process.cwd();
+
 /**
  * EsPkg配置
  */
@@ -17,13 +18,16 @@ export interface EsPkgConfig {
     typings?: string,
     /** 入口 @default 默认为./src */
     entry?: string,
+    /** 发布前是否移除编译后的文件 */
+    removeCompiled?: boolean,
     entryCss?: [],
-    publishAccess?:[string,string]
+    publishAccess?: [string, string]
     /** npm发布目录 @default 默认为../npm */
     publishDir?: string,
     /** md文档名称 @default 默认为 README */
     doc?: string | Partial<DocOptions>,
 }
+
 /**
  * 配置自定义
  */

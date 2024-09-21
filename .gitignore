@@ -7,6 +7,7 @@
 /packages/publish/npm/
 /packages/utils/npm/
 /packages/iife/npm/
+/packages/es-pkg/npm/
 /test/npm/
 .idea/
 /node_modules

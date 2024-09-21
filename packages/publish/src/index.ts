@@ -172,7 +172,10 @@ gulp.task('copy-es', () => {
 });
 
 gulp.task('remove-__npm__', series(() => {
-    const promises = [remove(config.es), remove(config.cjs), remove(config.iife)];
+    let promises: Promise<void>[] = [];
+    if (config.removeCompiled) {
+        promises = [remove(config.es), remove(config.cjs), remove(config.iife)];
+    }
     return Promise.all(promises)
 }, () => {
     return gulp.src([`${publishDir}/.**`, `${publishDir}/**`])
