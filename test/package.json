@@ -1,40 +1,51 @@
 {
   "name": "test",
-  "version": "1.0.0",
-  "description": "gulp node执行",
+  "description": "test",
+  "version": "0.0.1",
+  "type": "module",
   "scripts": {
-    "compile": "npm run typecheck && es-pkg compile",
-    "iife": "es-pkg iife",
+    "dev": "vite",
+    "build-site": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "tes-compile": "es-pkg compile",
+    "unpkg": "es-pkg unpkg",
     "doc": "es-pkg doc",
-    "publish": "es-pkg publish",
-    "typecheck": "tsc --noEmit"
+    "test-publish": "es-pkg publish"
   },
   "dependencies": {
-    "es-pkg": "workspace:*"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@types/gulp": "^4.0.9",
-    "@types/pretty-time": "^1.1.2",
-    "@typescript-eslint/eslint-plugin": "^5.30.4",
-    "@typescript-eslint/parser": "^5.30.4",
-    "eslint": "^8.19.0",
-    "typescript": "^4.7.4"
+    "@types/react": "^18.3.8",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.6.0",
+    "@typescript-eslint/parser": "^8.6.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "eslint-plugin-react-refresh": "^0.4.12",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.6",
+    "es-pkg": "file://../packages/es-pkg",
+    "vite-plugin-checker": "^0.8.0"
   },
-  "files": [
-    "es",
-    "lib"
-  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "keywords": [
-    "gulp-execute"
+    "test"
   ],
-  "homepage": "https://github.com/robertpanvip/@es-pkg/execute.git",
+  "homepage": "https://github.com/xx/test.git",
   "repository": {
     "type": "git",
-    "url": "https://github.com/robertpanvip/@es-pkg/execute.git"
+    "url": "https://github.com/xx/test.git"
   },
   "bugs": {
-    "url": "https://github.com/robertpanvip/@es-pkg/execute/issues"
+    "url": "https://github.com/xx/test/issues"
   },
-  "author": "pan",
+  "author": "xx",
   "license": "ISC"
 }

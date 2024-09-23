@@ -5,18 +5,27 @@ import {isDirectory} from "@es-pkg/utils";
 
 const appDirectory = fs.realpathSync(process.cwd())
 export const resolveApp = (relativePath: string) => path.resolve(appDirectory, relativePath);
+
+
 export const relativeToApp = (relativePath: string) => {
     const app = resolveApp('');
     const p = resolveApp(relativePath);
     return path.relative(app, p)
 };
+
 export const pkg = JSON.parse(fs.readFileSync(resolveApp('package.json'), 'utf-8'))
 
 export const getJson = (relativePath: string) => {
     try {
         return JSON.parse(fs.readFileSync(resolveApp(relativePath), 'utf-8'))
     } catch (err) {
-        return {}
+        try {
+            const content = fs.readFileSync(relativePath, 'utf-8')
+            const _content = content.replace(/\/\/.*?$|\/\*[\s\S]*?\*\//gm, '')
+            return JSON.parse(_content)
+        } catch (e) {
+            return {}
+        }
     }
 }
 
@@ -30,12 +39,13 @@ function isFileExists(filePath: string) {
 }
 
 const esPkgInfo = getJson('espkg.json')
-export const config: Required<EsPkgConfig> & { include: string[] } = {
+export const config: Required<EsPkgConfig> = {
     cjs: "./npm/cjs",
     es: "./npm/esm",
     iife: "./npm/iife",
     typings: "./typings",
     entry: `./src`,
+    include: ['./src'],
     entryCss: [],
     publishDir: `./npm`,
     doc: 'README',
@@ -45,8 +55,6 @@ export const config: Required<EsPkgConfig> & { include: string[] } = {
 export const resolveConfig = async () => {
     const configPath = resolveApp('espkg.config.ts');
     const pkgConfigPath = resolveApp('pkg.config.ts')
-    const tsconfigPath = resolveApp('tsconfig.json')
-
     if (isFileExists(pkgConfigPath)) {
         const res = require(pkgConfigPath)
         Object.assign(config, res.default)
@@ -55,18 +63,12 @@ export const resolveConfig = async () => {
         const res = require(configPath)
         Object.assign(config, res.default)
     }
-    if (isFileExists(tsconfigPath)) {
-        const res = JSON.parse(fs.readFileSync(tsconfigPath, 'utf-8'));
-        Object.assign(config, {
-            include: Array.isArray(res.include) ? res.include : [res.include]
-        })
-    }
 }
 const suffixes = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json'];
 
 export function getDirectoryIndexPath(dir: string) {
     const item = suffixes.find(suffix => {
-        return !!fs.existsSync(path.posix.join(dir, `index${suffix}`));
+        return !!fs.existsSync(path.join(dir, `index${suffix}`));
     })
     if (!item) {
         throw new Error('not fount entry')
@@ -75,13 +77,18 @@ export function getDirectoryIndexPath(dir: string) {
 }
 
 export function getIndexFilePath(_path: string) {
-    const {dir, name} = path.parse(_path)
+    const getRelativeToNpm = (val: string) => path.relative(config.publishDir, val);
+
+    const fileOrDir = path.basename(_path);
+
+    const {dir, name} = !fileOrDir.includes('.') ? {dir: _path, name: 'index'} : path.parse(_path);
+
     const item = suffixes.find(suffix => {
         return !!fs.existsSync(path.join(dir, `${name}${suffix}`));
     })
-    const getRelativeToNpm = (val: string) => path.relative(config.publishDir, val)
+
     if (item) {
-        const valid = path.posix.join(dir, `${name}${item}`)
+        const valid = path.join(dir, `${name}${item}`)
         if (isDirectory(valid)) {
             return getRelativeToNpm(getDirectoryIndexPath(valid))
         } else {
@@ -93,41 +100,46 @@ export function getIndexFilePath(_path: string) {
     }
 }
 
-
-export function getEntrypoint(_dir: string, entry = config.entry) {
-    const include = getTsconfigIncludeFiles()
-    const appPath = resolveApp("");
-    // 获取相对路径
-    const entryPath = path.relative(appPath, resolveApp(entry));
-    const filePath = getIndexFilePath(path.join(config.publishDir, entryPath))
-    if (filePath) {
-        return filePath.split(path.sep).join('/')
-    }
-    let _path;
-    if (include.length > 1) {
-        _path = entryPath
-    } else {
-        const arr = entryPath.split(path.sep);
-        arr.shift();
-        _path = arr.join(path.sep);
-    }
-    const res = getIndexFilePath(path.join(_dir, _path))
-    return res.split(path.sep).join('/')
-}
-
-export function getTsconfigIncludeFiles(): { isDirectory: boolean, path: string }[] {
+export function getIncludeFiles(): { isDirectory: boolean, path: string }[] {
     const appPath = resolveApp('')
-    const tsconfigPath = resolveApp('tsconfig.json')
-    const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf-8'));
-    const include: string[] = Array.isArray(tsconfig.include) ? tsconfig.include : [tsconfig.include]
+    const include: string[] = Array.isArray(config.include) ? config.include : [config.include]
     return include.flatMap((pattern: string) => {
         const _ = path.join(appPath, pattern)
         return [{
             isDirectory: isDirectory(_),
-            path: _
+            path: _,
         }]
     });
 }
+
+export const getNpmEntry = (entry: string, _basePath: string) => {
+    const npm = config.publishDir;
+    const basename = path.basename(_basePath);
+    const basePath = path.join(npm, basename)
+
+    const include = getIncludeFiles();
+    let res = entry;
+    include.find(item => {
+        if (path.resolve(entry).startsWith(path.resolve(item.path))) {
+            const pp = item.isDirectory && include.length > 1 ?
+                path.join(basePath, relativeToApp(item.path))
+                : relativeToApp(basePath);
+            const v1 = path.resolve(item.path, item.isDirectory ? '' : '../');
+            const v2 = path.resolve(pp);
+            const v3 = path.resolve(entry);
+            res = relativeToApp(v3.replace(v1, v2))
+        }
+    })
+    return relativeToApp(res)
+}
+
+
+export function getEntrypoint(basePath: string, entry = config.entry) {
+    const _entry = getNpmEntry(entry, basePath)
+    const res = getIndexFilePath(path.resolve(_entry))
+    return res.split(path.sep).join('/')
+}
+
 
 export * from './defineConfig'
 

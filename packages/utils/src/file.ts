@@ -4,7 +4,6 @@ export function isDirectory(path:string) {
         const stats = fs.statSync(path);
         return stats.isDirectory();
     } catch (err) {
-        console.error('无法访问路径:', err);
         return false;
     }
 }

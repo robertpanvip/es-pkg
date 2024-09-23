@@ -1,8 +1,8 @@
-import defineConfig from "@es-pkg/config";
-
+import defineConfig from "es-pkg";
 export default defineConfig({
-    "entry":'./src/index.ts',
-    "doc":{
-        entry:'./index2.ts',
-    }
+    "es": "./npm/esm",
+    "cjs": "./npm/cjs",
+    "typings": "./src/index.tsx",
+    "publishDir":"./npm",
+    "include": ["./src/"],
 })

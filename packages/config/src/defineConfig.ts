@@ -14,12 +14,12 @@ export interface EsPkgConfig {
     es?: string,
     /** iife 目录 @default 默认为./npm/dist */
     iife?: string,
+    /** 包含的文件 默认为./src */
+    include?:string[],
     /** 声明 目录 @default 默认为./typings */
     typings?: string,
     /** 入口 @default 默认为./src */
     entry?: string,
-    /** 发布前是否移除编译后的文件 */
-    removeCompiled?: boolean,
     entryCss?: [],
     publishAccess?: [string, string]
     /** npm发布目录 @default 默认为../npm */

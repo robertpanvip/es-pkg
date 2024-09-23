@@ -4,7 +4,7 @@ import logger from '@es-pkg/gulp-logger'
 import fs from "fs"
 import path from "path";
 import {autoUpgrade, compare, remove, run, error, log, success} from "@es-pkg/utils";
-import {config, getEntrypoint, pkg, resolveApp} from "@es-pkg/config";
+import {config, getEntrypoint, getIncludeFiles, pkg, resolveApp} from "@es-pkg/config";
 import prompts from "prompts"
 
 const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
@@ -83,16 +83,17 @@ gulp.task('copy-info', series(async () => {
         }
     }
     const es = path.basename(config.es);
-    const cjs = path.basename(config.cjs)
-    const iife = path.basename(config.iife)
-    const CJSExists = fs.existsSync(path.join(`${publishDir}`, cjs))
-    const ESExists = fs.existsSync(path.join(`${publishDir}`, es))
-    const IIFEExists = fs.existsSync(path.join(`${publishDir}`, iife))
+    const cjs = path.basename(config.cjs);
+    const iife = path.basename(config.iife);
+    const CJSExists = fs.existsSync(path.join(`${config.publishDir}`, cjs))
+    const ESExists = fs.existsSync(path.join(`${config.publishDir}`, es))
+    const IIFEExists = fs.existsSync(path.join(`${config.publishDir}`, iife))
     const mainExists = !!json.main && fs.existsSync(path.join(resolveApp(''), json.main as string))
     const browserExists = !!json.browser && fs.existsSync(path.join(resolveApp(''), json.main as string))
     const moduleExists = !!json.module && fs.existsSync(path.join(resolveApp(''), json.main as string))
 
-    const _es = getEntrypoint(config.es)
+    const _es = getEntrypoint(config.es);
+
     const _cjs = getEntrypoint(config.cjs)
     if (!mainExists) {
         if (ESExists) {
@@ -103,15 +104,17 @@ gulp.task('copy-info', series(async () => {
         }
     }
     if (!moduleExists && CJSExists) {
-        json.module = getEntrypoint(config.es) || _es || _cjs
+        json.module =  _es || _cjs
     }
     if (!browserExists && IIFEExists) {
         json.browser = getEntrypoint(config.iife)
     }
     if (!json.types) {
-        json.types = getEntrypoint(config.es, config.typings) || _es || _cjs
+        const type = getEntrypoint(config.es, config.typings) || _es || _cjs;
+        const {dir, name, ext} = path.parse(type);
+        json.types = ['.ts', '.tsx'].includes(ext) ? type : `${dir}/${name}.d.ts`
     }
-    json.files = [ESExists && es, CJSExists && cjs, IIFEExists && iife].filter(Boolean)
+    json.files = Array.from(new Set([ESExists && es, CJSExists && cjs, IIFEExists && iife])).filter(Boolean)
 
     json.dependencies = Object.fromEntries(Object.entries(json.dependencies).map(([key, value]) => {
         if (value.startsWith('file://') || value.startsWith('workspace:')) {
@@ -121,16 +124,16 @@ gulp.task('copy-info', series(async () => {
     }))
 
     let jsonStr = JSON.stringify(json, null, "\t")
-    const ex = fs.existsSync(`${publishDir}/`)
+    const ex = fs.existsSync(`${config.publishDir}/`)
     if (!ex) {
-        fs.mkdirSync(`${publishDir}/`, {recursive: true})
+        fs.mkdirSync(`${config.publishDir}/`, {recursive: true})
     }
-    fs.writeFileSync(`${publishDir}/package.json`, jsonStr)
+    fs.writeFileSync(`${config.publishDir}/package.json`, jsonStr)
     log(`生成 package完成`, chalk.green(json.version))
 
     log(`生成 .npmrc 开始`)
-    fs.writeFileSync(`${publishDir}/.npmrc`, `registry=${REGISTRY}`)
-    log(`生成 .npmrc 完成`,)
+    fs.writeFileSync(`${config.publishDir}/.npmrc`, `registry=${REGISTRY}`)
+    log(`生成 .npmrc 完成`)
 
     log(`拷贝 README 开始`)
 }, () => {
@@ -140,7 +143,7 @@ gulp.task('copy-info', series(async () => {
             after: 'copy README complete!',
             showChange: false
         }))
-        .pipe(gulp.dest(`${publishDir}/`))
+        .pipe(gulp.dest(`${config.publishDir}/`))
 }));
 
 gulp.task('copy-iife', () => {
@@ -174,9 +177,11 @@ gulp.task('copy-es', () => {
 
 gulp.task('remove-__npm__', series(() => {
     let promises: Promise<void>[] = [];
-    if (config.removeCompiled) {
-        promises = [remove(config.es), remove(config.cjs), remove(config.iife)];
-    }
+    const includes = [config.es, config.cjs, config.iife].flatMap(val => {
+        const some = getIncludeFiles().some(item => path.resolve(val).startsWith(path.resolve(item.path)))
+        return some ? [] : [val]
+    })
+    promises = includes.map(item => remove(item))
     return Promise.all(promises)
 }, () => {
     return gulp.src([`${publishDir}/**`, `${publishDir}/.**`])
@@ -223,4 +228,4 @@ gulp.task('npm-publish', async function () {
     }
 });
 
-export default gulp.series('clean', 'del-cjs-iife-es', 'copy-cjs', 'copy-es', 'copy-iife', 'copy-info', 'remove-__npm__', 'npm-publish')
+export default gulp.series('clean', 'del-cjs-iife-es', 'copy-cjs', 'copy-es', 'copy-iife', 'remove-__npm__', 'copy-info', 'npm-publish')

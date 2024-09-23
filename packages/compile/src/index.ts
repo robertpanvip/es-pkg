@@ -9,11 +9,11 @@ import rename from "gulp-rename";
 import autoPreFixer from "gulp-autoprefixer"
 import Sass from "sass";
 import {remove, log} from "@es-pkg/utils";
-import {config, getTsconfigIncludeFiles, relativeToApp, resolveApp} from "@es-pkg/config";
+import {config, getIncludeFiles, relativeToApp, resolveApp} from "@es-pkg/config";
 import path from "path";
 
 const sass = gulpSass(Sass)
-const include = getTsconfigIncludeFiles()
+const include = getIncludeFiles()
 
 function getMatchFiles(callback: (path: string) => (string[]) | string, contains: boolean = true) {
     return include.flatMap(item => {
@@ -135,7 +135,7 @@ const compileEs = () => {
                 `${config.typings}/**/*`,
             ] : [item.path],
             isDirectory && include.length > 1 ?
-                path.join(config.es, path.basename(item.path))
+                path.join(config.es, relativeToApp(item.path))
                 : config.es
         )
     })
