@@ -1,6 +1,6 @@
 {
   "name": "es-pkg",
-  "version": "1.0.28",
+  "version": "1.1.1",
   "description": "组件打包工具",
   "main": "./src/defineConfig",
   "scripts": {

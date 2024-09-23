@@ -5,7 +5,7 @@ export default defineConfig({
     cjs: "./src",
     typings: './src/defineConfig.ts',
     entry: './src/index.ts',
-    removeCompiled: false,
+    include: ['./src', './bin'],
     doc: {
         entry: './src/defineConfig.ts',
     }

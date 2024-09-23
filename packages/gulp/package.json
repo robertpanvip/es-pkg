@@ -4,10 +4,10 @@
   "description": "gulp node执行",
   "main": "src/index",
   "scripts": {
-    "compile": "npm run typecheck && es-pkg compile",
+    "gulp-compile": "npm run typecheck && es-pkg compile",
     "unpkg": "es-pkg unpkg",
     "doc": "es-pkg doc",
-    "publish": "es-pkg publish",
+    "gulp-publish": "es-pkg publish",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

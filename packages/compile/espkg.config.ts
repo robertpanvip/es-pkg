@@ -1,10 +1,9 @@
 import defineConfig from "@es-pkg/config";
 
 export default defineConfig({
-    es:'src',
+    es:'./src',
     entry:'./src/index.ts',
-    removeCompiled:false,
-    "doc":{
+    doc:{
         entry:'./src/index.ts',
     }
 })
