@@ -31,7 +31,6 @@
   "dependencies": {
     "chalk": "^5.0.1",
     "prompts": "^2.4.2",
-    "node-fetch": "latest",
     "@es-pkg/gulp-logger": "file://..gulp-logger",
     "@es-pkg/gulp": "file://..gulp",
     "@es-pkg/utils": "file://..utils",

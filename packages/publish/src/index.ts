@@ -3,7 +3,7 @@ import chalk from 'chalk';// 改变屏幕文字颜色
 import logger from '@es-pkg/gulp-logger'
 import fs from "fs"
 import path from "path";
-import {autoUpgrade, compare, remove, run, error, log, success} from "@es-pkg/utils";
+import {autoUpgrade, compare, remove, run, error, log, success, fetch } from "@es-pkg/utils";
 import {config, getEntrypoint, getIncludeFiles, pkg, resolveApp} from "@es-pkg/config";
 import prompts from "prompts"
 
@@ -39,29 +39,31 @@ gulp.task('del-cjs-iife-es', async () => {
 gulp.task('copy-info', series(async () => {
     log(`生成 package 开始`);
     const controller = new AbortController();
-    const {default: fetch} = await import("node-fetch");
     let errored = false;
     try {
         const timer = setTimeout(() => {
             controller.abort()
-        }, 2000)
-        const response = await fetch(`https://registry.npmjs.org/${pkg.name}`, {
-            signal: controller.signal,
-        })
+        }, 3000)
+        const start= Date.now();
+        const url=`https://unpkg.com/${pkg.name}`
+
+        const response = await fetch(url, {
+            signal: controller.signal
+        }).finally(()=>{
+            log.warn(`远程获取版本花费时间:${Date.now() - start}`)
+        });
+
+        const regex = /@([0-9A-Za-z.-]+)/;
+        const version = (response?.url.split(url)[1]).match(regex)?.[1];
         clearTimeout(timer);
-        const res = await response.json() as { "dist-tags": { latest: string }, "error": string };
-        if (res["error"] === 'Not found') {
-            log(`未获取到远程获取版本信息`, JSON.stringify(res))
-            json.version = pkg.version;
+        log(`远程获取版本信息 tag:`, version)
+        if (version) {
+            json.version = compare(pkg.version, version) <= 0 ? autoUpgrade(version) : pkg.version
         } else {
-            log(`远程获取版本信息 tag:`, res["dist-tags"].latest)
-            if (res["dist-tags"]) {
-                json.version = compare(pkg.version, res["dist-tags"].latest) <= 0 ? autoUpgrade(res["dist-tags"].latest) : pkg.version
-            } else {
-                errored = true;
-            }
+            errored = true;
         }
     } catch (e) {
+        //console.log(e)
         errored = true;
     }
     if (errored) {
