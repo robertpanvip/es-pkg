@@ -45,16 +45,17 @@ gulp.task('copy-info', series(async () => {
             controller.abort()
         }, 3000)
         const start= Date.now();
-        const url=`https://unpkg.com/${pkg.name}`
+        const url=`https://img.shields.io/npm/v/${pkg.name}`
 
         const response = await fetch(url, {
             signal: controller.signal
-        }).finally(()=>{
+        }).finally(async()=>{
             log.warn(`远程获取版本花费时间:${Date.now() - start}`)
         });
-
-        const regex = /@([0-9A-Za-z.-]+)/;
-        const version = (response?.url.split(url)[1]).match(regex)?.[1];
+        const htmlString= await response.text()
+        log.warn(`远程获取版本花费时间2:${Date.now() - start}`)
+        const regex = /<title>npm: v([\d.]+)<\/title>/;
+        const version = htmlString.match(regex)?.[1];
         clearTimeout(timer);
         log(`远程获取版本信息 tag:`, version)
         if (version) {
@@ -63,7 +64,6 @@ gulp.task('copy-info', series(async () => {
             errored = true;
         }
     } catch (e) {
-        //console.log(e)
         errored = true;
     }
     if (errored) {

@@ -12,7 +12,7 @@ interface FetchOptions {
 interface FetchResponse {
     status: number;
     headers: Record<string, string>;
-    data: string;
+    body: string;
     url: string,
 
     json(): Promise<object>
@@ -80,6 +80,9 @@ class ClientHttpSession {
 }
 
 export async function fetch(url: string, options: FetchOptions = {}): Promise<FetchResponse> {
+    if(global.fetch){
+        return await global.fetch(url,options as RequestInit) as unknown as Promise<FetchResponse>
+    }
     return new Promise((resolve, reject) => {
         const {signal, body, method = 'GET'} = options; // 默认最大重定向次数为 5
         const {protocol, hostname, pathname} = new URL(url);
@@ -138,7 +141,7 @@ export async function fetch(url: string, options: FetchOptions = {}): Promise<Fe
             resolve({
                 status: headers[':status'] as number,
                 headers: headers as Record<string, string>,
-                data: data,
+                body: data,
                 url: _url,
                 async json() {
                     const data = await jsonDeferred.promise
