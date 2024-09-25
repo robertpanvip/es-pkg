@@ -52,8 +52,7 @@ gulp.task('copy-info', series(async () => {
         }).finally(async()=>{
             log.warn(`远程获取版本花费时间:${Date.now() - start}`)
         });
-        const htmlString= await response.text()
-        log.warn(`远程获取版本花费时间2:${Date.now() - start}`)
+        const htmlString= await response.text();
         const regex = /<title>npm: v([\d.]+)<\/title>/;
         const version = htmlString.match(regex)?.[1];
         clearTimeout(timer);

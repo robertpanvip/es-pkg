@@ -1,7 +1,3 @@
-import chalk from 'chalk'; // 改变屏幕文字颜色
-import type {ExecaReturnValue, Options as ExecaOptions} from 'execa'
-import type {ProgressData} from 'del';
-import {deleteAsync} from 'del';
 
 export const titleCase = (str: string) => {
     const strArr = str.split(/[_\-]/)
@@ -21,33 +17,6 @@ export const getValidPkgName = (str: string) => {
     return str
 }
 
-/**
- *删除文件或者文件夹
- **/
-export async function remove(url: string, folders: boolean = false) {
-    const path = folders ? `${url}/**/*` : url;
-    await deleteAsync([path], {
-        force: true,
-        dot: true,
-        gitignore: false,
-        onProgress({totalCount, deletedCount, percent}: ProgressData) {
-        }
-    });
-}
-
-export function step(msg: string): void {
-    return console.log(chalk.cyan(msg))
-}
-
-export async function run(
-    bin: string,
-    args: string[],
-    opts: ExecaOptions<string> = {}
-): Promise<ExecaReturnValue<string>> {
-    //由于execa 的包是esm形式的
-    const {execa} = await import("execa")
-    return execa(bin, args, {stdio: 'inherit', ...opts})
-}
 
 /**
  * 版本号比较大小
@@ -96,7 +65,4 @@ export const autoUpgrade = (str: string) => {
     return arr.map(it => Number(it)).join('.');
 }
 
-export function isValidHttp(url: string): boolean {
-    const pattern = /^(http|https):\/\/[^\s/$.?#].[^\s]*$/i; // 匹配以http或https开头的连接
-    return pattern.test(url);
-}
+
