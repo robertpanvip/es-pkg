@@ -3,12 +3,12 @@ import chalk from 'chalk';// 改变屏幕文字颜色
 import logger from '@es-pkg/gulp-logger'
 import fs from "fs"
 import path from "path";
-import {autoUpgrade, compare, remove, run, error, log, success, fetch } from "@es-pkg/utils";
+import {autoUpgrade, compare, remove, run, error, log, success, fetch} from "@es-pkg/utils";
 import {config, getEntrypoint, getIncludeFiles, pkg, resolveApp} from "@es-pkg/config";
 import prompts from "prompts"
 
 const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
-const REGISTRY = "https://registry.npmjs.org"
+const REGISTRY = config.publishRegistry
 
 const json: Record<string, string | object> = pkg;
 
@@ -38,24 +38,34 @@ gulp.task('del-cjs-iife-es', async () => {
 });
 gulp.task('copy-info', series(async () => {
     log(`生成 package 开始`);
-    const controller = new AbortController();
     let errored = false;
+    let version: string | void = "";
     try {
-        const timer = setTimeout(() => {
-            controller.abort()
-        }, 3000)
-        const start= Date.now();
-        const url=`https://img.shields.io/npm/v/${pkg.name}`
-
-        const response = await fetch(url, {
-            signal: controller.signal
-        }).finally(async()=>{
-            log.warn(`远程获取版本花费时间:${Date.now() - start}`)
+        const { stdout } = await run(`npm`, ['view', pkg.name, 'version'], {
+            stdio: undefined,
+            cwd: path.join(process.cwd(), config.publishDir),
         });
-        const htmlString= await response.text();
-        const regex = /<title>npm: v([\d.]+)<\/title>/;
-        const version = htmlString.match(regex)?.[1];
-        clearTimeout(timer);
+        if (stdout) {
+            version = stdout
+        }
+        if (!version) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => {
+                controller.abort()
+            }, 3000);
+            const start = Date.now();
+            const url = `https://img.shields.io/npm/v/${pkg.name}`
+
+            const response = await fetch(url, {
+                signal: controller.signal
+            }).finally(async () => {
+                log.warn(`远程获取版本花费时间:${Date.now() - start}`)
+            });
+            const htmlString = await response.text();
+            const regex = /<title>npm: v([\d.]+)<\/title>/;
+            version = htmlString.match(regex)?.[1];
+            clearTimeout(timer);
+        }
         log(`远程获取版本信息 tag:`, version)
         if (version) {
             json.version = compare(pkg.version, version) <= 0 ? autoUpgrade(version) : pkg.version
@@ -105,7 +115,7 @@ gulp.task('copy-info', series(async () => {
         }
     }
     if (!moduleExists && CJSExists) {
-        json.module =  _es || _cjs
+        json.module = _es || _cjs
     }
     if (!browserExists && IIFEExists) {
         json.browser = getEntrypoint(config.iife)
@@ -210,7 +220,7 @@ gulp.task('npm-publish', async function () {
         const {stdout} = await run(`npm`, ["whoami", '--registry', REGISTRY], {stdio: undefined})
         log.warn(`===npm登录信息===>${stdout}`)
     } catch (e) {
-        log.warn("===npm未登录！！请登录")
+        log.warn(`===npm${REGISTRY}未登录！！请登录`)
         await run(`npm`, ["login", '--registry', REGISTRY])
     }
     const {confirm} = await prompts({

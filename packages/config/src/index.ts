@@ -50,6 +50,7 @@ export const config: Required<EsPkgConfig> = {
     publishDir: `./npm`,
     doc: 'README',
     removeCompiled: true,
+    publishRegistry:"https://registry.npmjs.org",
     ...esPkgInfo,
 }
 export const resolveConfig = async () => {

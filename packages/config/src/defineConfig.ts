@@ -21,7 +21,9 @@ export interface EsPkgConfig {
     /** 入口 @default 默认为./src */
     entry?: string,
     entryCss?: [],
-    publishAccess?: [string, string]
+    publishAccess?: [string, string],
+    /** 发布仓库 默认https://registry.npmjs.org**/
+    publishRegistry?:string
     /** npm发布目录 @default 默认为../npm */
     publishDir?: string,
     /** md文档名称 @default 默认为 README */
