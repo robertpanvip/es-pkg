@@ -5,6 +5,7 @@ import ts from "gulp-typescript"
 import typescript from "typescript"
 import babel from "gulp-babel"
 import gulpSass from "gulp-sass";
+import gulpLess from "gulp-less";
 import rename from "gulp-rename";
 import autoPreFixer from "gulp-autoprefixer"
 import Sass from "sass";
@@ -39,31 +40,34 @@ const clean = () => {
 }
 
 
-const dealScss = () => {
+const cssPreprocess = () => {
     const copy = (dest: string) => {
         return () => gulp.src(
-            getMatchFiles((path) => `${path}/**/*.scss`, false)
+            getMatchFiles((path) => [`${path}/**/*.scss`, `${path}/**/*.less`], false)
         ).pipe(logger({
-            before: `copyScss...`,
-            after: 'copyScss complete!',
-            extname: '.scss',
+            before: `copyPreprocessCSS...`,
+            after: 'copyPreprocessCSS complete!',
             showChange: true
-        }))
-            .pipe(gulp.dest(dest))
+        })).pipe(gulp.dest(dest))
     }
-    const compileScss = () => {
-        return gulp.src(
-            getMatchFiles((path) => `${path}/**/*.scss`, false)
+    const compilePreprocess = (extname: string, dest: string) => {
+        return () => gulp.src(
+            getMatchFiles((path) => `${path}/**/*.${extname}`, false)
         )
-            .pipe(sass({outputStyle: 'compressed', outFile: 'xx'}).on('error', sass.logError))
+            .pipe(extname === 'less'
+                ? gulpLess()
+                : sass({outputStyle: 'compressed'}).on('error', sass.logError))
             .pipe(autoPreFixer())
             .pipe(rename((path) => {
                 path.extname = ".min.css"
             }))
             .pipe(plumber())
-            .pipe(gulp.dest(config.cjs));
+            .pipe(gulp.dest(dest));
     }
-    return parallel(copy(config.es), copy(config.cjs), compileScss)
+    const compile = (dest: string) => {
+        return parallel(compilePreprocess('scss', dest), compilePreprocess('less', dest))
+    }
+    return parallel(copy(config.es), copy(config.cjs), compile(config.cjs), compile(config.es))
 }
 
 
@@ -130,9 +134,9 @@ const compileEs = () => {
     const tasks = include.map((item) => {
         const isDirectory = item.isDirectory;
         return () => compile(isDirectory ? [
-                `${item.path}/**/*`,
+                `${item.path}/**/*.{ts,tsx}`,
                 `!${item.path}/**/__test__/!**`,
-                `${config.typings}/**/*`,
+                `${config.typings}/**/*.ts`,
             ] : [item.path],
             isDirectory && include.length > 1 ?
                 path.join(config.es, relativeToApp(item.path))
@@ -183,4 +187,4 @@ const compileLib = () => {
 
 const compileEsAndLib = series(compileEs(), copyTds, compileLib)
 
-export default series(clean, parallel(dealScss(), copyScssToLib, compileEsAndLib))
+export default series(clean, parallel(cssPreprocess(), copyScssToLib, compileEsAndLib))
