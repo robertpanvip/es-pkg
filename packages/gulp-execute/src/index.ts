@@ -43,6 +43,8 @@ export default function execute(exported: Record<string, Undertaker.TaskFunction
         const taskName = exported.displayName || exported.name || 'default';
         exported = {[taskName]: exported}
         toRun = [taskName]
+    } else if (typeof exported === 'object' && 'default' in (exported.default || {})) {
+        exported = exported.default as unknown as Record<string, Undertaker.TaskFunction>
     }
     logEvents(gulpInst);
     logSyncTask(gulpInst);
