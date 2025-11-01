@@ -24,9 +24,11 @@ gulp.task('clean', async () => {
     }
 });
 gulp.task('del-cjs-iife-es', async () => {
-    log(`删除 ${path.join(`${publishDir}`, config.iife)} 开始`)
-    await remove(`${path.join(`${publishDir}`, config.iife)}`);
-    log(`删除 ${path.join(`${publishDir}`, config.iife)} 结束`)
+    if (config.iife) {
+        log(`删除 ${path.join(`${publishDir}`, config.iife)} 开始`)
+        await remove(`${path.join(`${publishDir}`, config.iife)}`);
+        log(`删除 ${path.join(`${publishDir}`, config.iife)} 结束`)
+    }
 
     log(`删除 ${path.join(`${publishDir}`, config.cjs)} 开始`)
     await remove(`${path.join(`${publishDir}`, config.cjs)}`);
@@ -41,7 +43,7 @@ gulp.task('copy-info', series(async () => {
     let errored = false;
     let version: string | void = "";
     try {
-        const { stdout } = await run(`npm`, ['view', pkg.name, 'version'], {
+        const {stdout} = await run(`npm`, ['view', pkg.name, 'version'], {
             stdio: undefined,
             cwd: path.join(process.cwd(), config.publishDir),
         });
@@ -95,10 +97,10 @@ gulp.task('copy-info', series(async () => {
     }
     const es = path.basename(config.es);
     const cjs = path.basename(config.cjs);
-    const iife = path.basename(config.iife);
+    const iife = config.iife ? path.basename(config.iife) : "";
     const CJSExists = fs.existsSync(path.join(`${config.publishDir}`, cjs))
     const ESExists = fs.existsSync(path.join(`${config.publishDir}`, es))
-    const IIFEExists = fs.existsSync(path.join(`${config.publishDir}`, iife))
+    const IIFEExists = iife ? fs.existsSync(path.join(`${config.publishDir}`, iife)) : false
     const mainExists = !!json.main && fs.existsSync(path.join(resolveApp(''), json.main as string))
     const browserExists = !!json.browser && fs.existsSync(path.join(resolveApp(''), json.main as string))
     const moduleExists = !!json.module && fs.existsSync(path.join(resolveApp(''), json.main as string))
@@ -157,7 +159,10 @@ gulp.task('copy-info', series(async () => {
         .pipe(gulp.dest(`${config.publishDir}/`))
 }));
 
-gulp.task('copy-iife', () => {
+gulp.task('copy-iife', (c) => {
+    if (!config.iife) {
+        return c()
+    }
     log(`拷贝 '/iife/**' 开始`)
     return gulp.src([`${config.iife}/.**`, `${config.iife}/**`])
         .pipe(logger({
@@ -189,6 +194,9 @@ gulp.task('copy-es', () => {
 gulp.task('remove-__npm__', series(() => {
     let promises: Promise<void>[] = [];
     const includes = [config.es, config.cjs, config.iife].flatMap(val => {
+        if (!val) {
+            return []
+        }
         const some = getIncludeFiles().some(item => path.resolve(val).startsWith(path.resolve(item.path)))
         return some ? [] : [val]
     })

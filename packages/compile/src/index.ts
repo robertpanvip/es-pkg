@@ -1,15 +1,17 @@
 import gulp, {series} from "@es-pkg/gulp";
 import {remove, log, getValidPkgName, toPascalCase} from "@es-pkg/utils";
 import {config, shallowInputs, pkg, relativeToApp, resolveApp} from "@es-pkg/config";
-import {OutputOptions, rollup, RollupOptions, Plugin, TransformHook, SourceDescription} from 'rollup';
+import {OutputOptions, rollup, RollupOptions} from 'rollup';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
+import json from '@rollup/plugin-json';
 import postcss from 'rollup-plugin-postcss';
 import autoprefixer from 'autoprefixer';
 import cssnano from 'cssnano';
 import path from 'node:path';
 import fs from 'node:fs'
+import { builtinModules } from 'node:module';
 
 const clean = () => {
     log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---开始`);
@@ -52,11 +54,34 @@ function getPostcss(extract?: string | boolean) {
 const name = getValidPkgName(pkg.name);
 
 // 1. 配置输入选项
-function getInputOptions(declarationDir?: string): RollupOptions {
+function getInputOptions(isIIFE?: boolean, declarationDir?: string): RollupOptions {
+    function isNodeModule(id: string) {
+        // 获取模块绝对路径
+        try {
+            const resolved = require.resolve(id, {paths: [process.cwd()]});
+            return resolved.includes('node_modules');
+        } catch {
+            // 无法 resolve 的，认为是本地模块
+            return false;
+        }
+    }
+
     return ({
         input: shallowInputs,
+        external: id => {
+            // Node 内置模块或者 npm 包都 external
+            if (builtinModules.includes(id)) return true;
+            if (id.startsWith('node:')) {
+                return true
+            }
+            // 排除本地相对路径和绝对路径，别名映射到本地也不会 external
+            if (id.startsWith('.') || path.isAbsolute(id)) return false;
+            // node_modules 下的模块才 external
+            return isNodeModule(id);
+        },
         plugins: [
-            resolve(),   // 解析 node_modules
+            json(),
+            isIIFE && resolve(),   // 解析 node_modules
             commonjs(),   // 转换 CommonJS 模块
             typescript({
                 tsconfig: resolveApp('tsconfig.json'), // 可选，指定 tsconfig
@@ -76,7 +101,7 @@ function getInputOptions(declarationDir?: string): RollupOptions {
                 }
             }),
             getPostcss(config.css.extract)
-        ]
+        ].filter(Boolean)
     })
 }
 
@@ -115,7 +140,7 @@ async function buildExtraCss() {
             // 复制到其他目标目录
             [config.cjs, config.iife].forEach(targetRoot => {
                 const dest = path.join(resolveApp(targetRoot), dirname, `${filename}.min.css`);
-                fs.mkdirSync(path.dirname(dest), { recursive: true });
+                fs.mkdirSync(path.dirname(dest), {recursive: true});
                 fs.copyFileSync(
                     path.join(esRoot, dirname, `${filename}.min.css`),
                     dest
@@ -135,7 +160,7 @@ async function buildExtraCss() {
 async function build() {
 
     // 2. 配置输出选项
-    const outputOptions: OutputOptions[] = [
+    let outputOptions: OutputOptions[] = [
         {
             dir: config.es,
             format: 'es',  // 输出 ES Module
@@ -159,15 +184,18 @@ async function build() {
             name: toPascalCase(name)
         }
     ];
+    if (!config.iife) {
+        outputOptions = outputOptions.filter(op => op.format !== 'iife')
+    }
 
-    // 3. 调用 rollup 打包
-    const bundle = await rollup(getInputOptions());
     for (const output of outputOptions) {
+        // 3. 调用 rollup 打包
+        const bundle = await rollup(getInputOptions(output.format === 'iife'));
         // 4. 写入文件
         await bundle.write(output);
     }
     {
-        const bundle = await rollup(getInputOptions(config.es));
+        const bundle = await rollup(getInputOptions(false, config.es));
         await bundle.write(outputOptions[0]);
     }
     await buildExtraCss();

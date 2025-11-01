@@ -43,7 +43,6 @@ const esPkgInfo = getJson('espkg.json')
 export const config: Required<EsPkgConfig> = {
     cjs: "./npm/cjs",
     es: "./npm/esm",
-    iife: "./npm/iife",
     typings: "./typings",
     entry: `./src`,
     include: ['./src'],
@@ -55,7 +54,7 @@ export const config: Required<EsPkgConfig> = {
 }
 export const resolveConfig = async () => {
     const configPath = resolveApp('espkg.config.ts');
-    const pkgConfigPath = resolveApp('pkg.config.ts')
+    const pkgConfigPath = resolveApp('pkg.config.ts');
     if (isFileExists(pkgConfigPath)) {
         const res = require(pkgConfigPath)
         Object.assign(config, res.default)

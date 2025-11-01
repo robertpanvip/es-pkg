@@ -42,7 +42,9 @@
     "rollup": "^4.52.5",
     "rollup-plugin-postcss": "^4.0.2",
     "@rollup/plugin-typescript": "^12.3.0",
-
+    "@rollup/plugin-json": "^6.1.0",
+    "autoprefixer": "^10.4.21",
+    "cssnano": "latest",
     "sass": "^1.53.0",
     "@es-pkg/gulp": "file://..gulp",
     "@es-pkg/gulp-logger": "file://..gulp-logger",
