@@ -5,7 +5,6 @@
   "main": "./src/index",
   "scripts": {
     "compile-compile": "npm run typecheck && es-pkg compile",
-    "iife": "es-pkg iife",
     "doc": "es-pkg doc",
     "compile-publish": "es-pkg publish",
     "typecheck": "tsc --noEmit"

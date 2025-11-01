@@ -1,4 +1,4 @@
 {
-  "es":"./src",
+  "es":"./npm/esm",
   "entry": "./src/index.ts"
 }
