@@ -19,17 +19,60 @@ gulp 配置
 
 |参数|类型|
 |---|---|
+|🔖default|`References`|
+|📒EsPkgConfig|`Interfaces`|
 |☀️config|`Variables`|
 |☀️pkg|`Variables`|
-|🎗️default|`Functions`|
+|☀️shallowInputs|`Variables`|
+|🎗️defineConfig|`Functions`|
 |🎗️getDirectoryIndexPath|`Functions`|
 |🎗️getEntrypoint|`Functions`|
+|🎗️getIncludeFiles|`Functions`|
 |🎗️getIndexFilePath|`Functions`|
 |🎗️getJson|`Functions`|
-|🎗️getTsconfigIncludeFiles|`Functions`|
+|🎗️getNpmEntry|`Functions`|
 |🎗️relativeToApp|`Functions`|
 |🎗️resolveApp|`Functions`|
 |🎗️resolveConfig|`Functions`|
+
+**🔖References**
+----------------
+
+  
+  
+
+#### default
+
+Renames and re-exports defineConfig
+
+**📒Interfaces**
+----------------
+
+  
+  
+
+EsPkg配置  
+  
+
+#### EsPkgConfig
+
+|参数|类型|说明|默认值|
+|---|---|---|---|
+|cjs|?: `string`|cjs 目录|默认为./npm/cjs|
+|css|\|参数\|类型\|说明\|默认值\|
+\|---\|---\|---\|---\|
+\|browserslist\|?: `string`\[\]\|autoprefixer browserslist\|默认为\['last 2 versions'\]\|
+\|extra\|?: `string`\[\]\|额外包含的css文件 @default默认为\[\]\|\|
+\|extract\|?: `string` \\| `boolean`\|输出配置：提取为单独的 CSS 文件（推荐） 可选：不提取，嵌入到 JS 中（通过 import 会生成 style 标签）\|默认为${name}.min.css\||||
+|doc|?: `string` \| `Partial`<`DocOptions`\>|md文档名称|默认为 README|
+|entry|?: `string`|入口|默认为./src|
+|es|?: `string`|es 目录|默认为./npm/es|
+|iife|?: `string`|iife 目录|默认为./npm/dist|
+|include|?: `string`\[\]|包含的文件|默认为./src|
+|publishAccess|?: \[`string`, `string`\]|||
+|publishDir|?: `string`|npm发布目录|默认为../npm|
+|publishRegistry|?: `string`|发布仓库 默认https://registry.npmjs.org\*||
+|typings|?: `string`|声明 目录|默认为./typings|
 
 **☀️Variables**
 ---------------
@@ -39,11 +82,7 @@ gulp 配置
 
 #### `Const` config
 
-: `Required`<`EsPkgConfig`\> & {  
-  
-    include: `string`\[\];  
-  
-} = ...
+: `Required`<`EsPkgConfig`\> = ...
 
   
   
@@ -51,6 +90,13 @@ gulp 配置
 #### `Const` pkg
 
 : `any` = ...
+
+  
+  
+
+#### `Const` shallowInputs
+
+: `string`\[\] = ...
 
 **🎗️Functions**
 ----------------
@@ -77,7 +123,20 @@ gulp 配置
 
 #### getEntrypoint
 
-*   getEntrypoint(\_dir:`string`): `string`
+*   getEntrypoint(basePath:`string`, entry?:`string`): `string`
+
+  
+  
+
+#### getIncludeFiles
+
+*   getIncludeFiles(): {  
+      
+        isDirectory: `boolean`;  
+      
+        path: `string`;  
+      
+    }\[\]
 
   
   
@@ -96,15 +155,9 @@ gulp 配置
   
   
 
-#### getTsconfigIncludeFiles
+#### getNpmEntry
 
-*   getTsconfigIncludeFiles(): {  
-      
-        isDirectory: `boolean`;  
-      
-        path: `string`;  
-      
-    }\[\]
+*   getNpmEntry(entry:`string`, \_basePath:`string`): `string`
 
   
   
