@@ -86,13 +86,11 @@ function getInputOptions(format: string, declarationDir?: string): RollupOptions
                 tsconfig: resolveApp('tsconfig.json'), // 可选，指定 tsconfig
                 compilerOptions: {
                     module: 'esnext',
-                    importHelpers: false,
                     esModuleInterop: true,
                     allowSyntheticDefaultImports: true,
                     noImplicitAny: true,
                     isolatedModules: false,
                     declaration: !!declarationDir,
-                    allowImportingTsExtensions: false,
                     declarationDir,
                     noEmit: false,
                     emitDeclarationOnly: !!declarationDir,
