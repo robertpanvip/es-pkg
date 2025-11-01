@@ -129,12 +129,14 @@ gulp.task('copy-info', series(async () => {
     }
     json.files = Array.from(new Set([ESExists && es, CJSExists && cjs, IIFEExists && iife])).filter(Boolean)
 
-    json.dependencies = Object.fromEntries(Object.entries(json.dependencies).map(([key, value]) => {
-        if (value.startsWith('file://') || value.startsWith('workspace:')) {
-            return [key, 'latest']
-        }
-        return [key, value]
-    }))
+    if(json.dependencies){
+        json.dependencies = Object.fromEntries(Object.entries(json.dependencies).map(([key, value]) => {
+            if (value.startsWith('file://') || value.startsWith('workspace:')) {
+                return [key, 'latest']
+            }
+            return [key, value]
+        }))
+    }
 
     let jsonStr = JSON.stringify(json, null, "\t")
     const ex = fs.existsSync(`${config.publishDir}/`)
