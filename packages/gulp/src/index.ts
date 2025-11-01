@@ -57,6 +57,7 @@ export class Gulp extends Undertaker {
 Gulp.prototype.Gulp = Gulp;
 
 const gulp = new Gulp();
+export const on = gulp.on;
 export const series = gulp.series;
 export const task = gulp.task;
 export const parallel = gulp.parallel;
