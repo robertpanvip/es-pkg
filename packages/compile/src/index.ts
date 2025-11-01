@@ -11,6 +11,7 @@ import autoprefixer from 'autoprefixer';
 import cssnano from 'cssnano';
 import path from 'node:path';
 import fs from 'node:fs'
+import esbuild from 'rollup-plugin-esbuild'
 import {builtinModules} from 'node:module';
 
 const clean = () => {
@@ -54,7 +55,8 @@ function getPostcss(extract?: string | boolean) {
 const name = getValidPkgName(pkg.name);
 
 // 1. 配置输入选项
-function getInputOptions(isIIFE?: boolean, declarationDir?: string): RollupOptions {
+function getInputOptions(format: string, declarationDir?: string): RollupOptions {
+
     function isNodeModule(id: string) {
         // 获取模块绝对路径
         try {
@@ -78,11 +80,15 @@ function getInputOptions(isIIFE?: boolean, declarationDir?: string): RollupOptio
         },
         plugins: [
             json(),
-            isIIFE && resolve(),   // 解析 node_modules
-            commonjs(),   // 转换 CommonJS 模块
+            format === 'iife' && resolve(),   // 解析 node_modules
+            format === 'iife' && commonjs({defaultIsModuleExports: true}),   // 转换 CommonJS 模块
             typescript({
                 tsconfig: resolveApp('tsconfig.json'), // 可选，指定 tsconfig
                 compilerOptions: {
+                    module: 'esnext',
+                    importHelpers: false,
+                    esModuleInterop: true,
+                    allowSyntheticDefaultImports: true,
                     noImplicitAny: true,
                     isolatedModules: false,
                     declaration: !!declarationDir,
@@ -90,12 +96,15 @@ function getInputOptions(isIIFE?: boolean, declarationDir?: string): RollupOptio
                     declarationDir,
                     noEmit: false,
                     emitDeclarationOnly: !!declarationDir,
-                    esModuleInterop: true,
                     resolveJsonModule: true,
                     skipLibCheck: true,
                     removeComments: false,
                     rootDir: resolveApp('src'), // ✅ 指定源代码根目录
                 }
+            }),
+            ["cjs","commonjs"].includes(format) && esbuild({
+                target: 'esnext',
+                format:  "cjs",
             }),
             getPostcss(config.css.extract)
         ].filter(Boolean)
@@ -187,12 +196,12 @@ async function build() {
 
     for (const output of outputOptions) {
         // 3. 调用 rollup 打包
-        const bundle = await rollup(getInputOptions(output.format === 'iife'));
+        const bundle = await rollup(getInputOptions(output.format!));
         // 4. 写入文件
         await bundle.write(output);
     }
     {
-        const bundle = await rollup(getInputOptions(false, config.es));
+        const bundle = await rollup(getInputOptions('es', config.es));
         await bundle.write(outputOptions[0]);
     }
     await buildExtraCss();
@@ -201,7 +210,7 @@ async function build() {
 
 
 const copySrcTds = () => {
-    return gulp.src(config.include.map(t=>`${t}/**/*.d.ts`)).pipe(gulp.dest(config.es));
+    return gulp.src(config.include.map(t => `${t}/**/*.d.ts`)).pipe(gulp.dest(config.es));
 }
 
 const copyTds = () => {
