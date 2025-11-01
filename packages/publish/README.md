@@ -29,4 +29,4 @@
 
 #### default
 
-*   default(done:`Undertaker.TaskCallback`): `void` | `EventEmitter`<`DefaultEventMap`\> | `internal.Stream` | `"child_process".ChildProcess` | `asyncDone.Observable`<`any`\> | `PromiseLike`<`any`\>
+*   default(done:`Undertaker.TaskCallback`): `void` | `EventEmitter`<`DefaultEventMap`\> | `internal.Stream` | `PromiseLike`<`any`\> | `"child_process".ChildProcess` | `asyncDone.Observable`<`any`\>

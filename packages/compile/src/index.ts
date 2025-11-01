@@ -11,7 +11,7 @@ import autoprefixer from 'autoprefixer';
 import cssnano from 'cssnano';
 import path from 'node:path';
 import fs from 'node:fs'
-import { builtinModules } from 'node:module';
+import {builtinModules} from 'node:module';
 
 const clean = () => {
     log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---开始`);
@@ -67,13 +67,10 @@ function getInputOptions(isIIFE?: boolean, declarationDir?: string): RollupOptio
     }
 
     return ({
-        input: shallowInputs,
+        input: shallowInputs.filter(item => !item.endsWith('.d.ts')),
         external: id => {
             // Node 内置模块或者 npm 包都 external
             if (builtinModules.includes(id)) return true;
-            if (id.startsWith('node:')) {
-                return true
-            }
             // 排除本地相对路径和绝对路径，别名映射到本地也不会 external
             if (id.startsWith('.') || path.isAbsolute(id)) return false;
             // node_modules 下的模块才 external
@@ -202,7 +199,12 @@ async function build() {
     log.success('✅ Build complete!');
 }
 
+
+const copySrcTds = () => {
+    return gulp.src(config.include.map(t=>`${t}/**/*.d.ts`)).pipe(gulp.dest(config.es));
+}
+
 const copyTds = () => {
     return gulp.src([`${config.es}/**/*.d.ts`]).pipe(gulp.dest(config.cjs));
 }
-export default series(clean, build, copyTds)
+export default series(clean, build, copySrcTds, copyTds)
