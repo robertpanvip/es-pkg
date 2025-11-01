@@ -1,30 +1,15 @@
-import gulp, {series, parallel} from "@es-pkg/gulp";
-import logger from "@es-pkg/gulp-logger";
-import plumber from "gulp-plumber"
-import ts from "gulp-typescript"
-import typescript from "typescript"
-import babel from "gulp-babel"
-import gulpSass from "gulp-sass";
-import gulpLess from "gulp-less";
-import rename from "gulp-rename";
-import autoPreFixer from "gulp-autoprefixer"
-import Sass from "sass";
-import {remove, log} from "@es-pkg/utils";
-import {config, getIncludeFiles, relativeToApp, resolveApp} from "@es-pkg/config";
-import path from "path";
-
-const sass = gulpSass(Sass)
-const include = getIncludeFiles()
-
-function getMatchFiles(callback: (path: string) => (string[]) | string, contains: boolean = true) {
-    return include.flatMap(item => {
-        if (contains && !item.isDirectory) {
-            return [item.path]
-        }
-        const res = callback(item.path);
-        return Array.isArray(res) ? res : [res]
-    })
-}
+import gulp, {series} from "@es-pkg/gulp";
+import {remove, log, getValidPkgName, toPascalCase} from "@es-pkg/utils";
+import {config, shallowInputs, pkg, relativeToApp, resolveApp} from "@es-pkg/config";
+import {OutputOptions, rollup, RollupOptions, Plugin, TransformHook, SourceDescription} from 'rollup';
+import resolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import typescript from '@rollup/plugin-typescript';
+import postcss from 'rollup-plugin-postcss';
+import autoprefixer from 'autoprefixer';
+import cssnano from 'cssnano';
+import path from 'node:path';
+import fs from 'node:fs'
 
 const clean = () => {
     log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---开始`);
@@ -39,152 +24,157 @@ const clean = () => {
     })
 }
 
+function getPostcss(extract?: string | boolean) {
+    return postcss({
+        // 处理 Less（需安装 less）
+        extensions: ['.less', '.scss', '.sass'], // 识别 less 扩展名
+        // 为不同类型的文件指定对应的编译器（关键修改）
+        use: {
+            "stylus": ['sass'],
+            'less': ['less'], //.less 文件用 less 编译
+            'sass': ['sass']  //.sass 文件用 sass 编译（缩进语法）
+        },
 
-const cssPreprocess = () => {
-    const copy = (dest: string) => {
-        return () => gulp.src(
-            getMatchFiles((path) => [`${path}/**/*.scss`, `${path}/**/*.less`], false)
-        ).pipe(logger({
-            before: `copyPreprocessCSS...`,
-            after: 'copyPreprocessCSS complete!',
-            showChange: true
-        })).pipe(gulp.dest(dest))
-    }
-    const compilePreprocess = (extname: string, dest: string) => {
-        return () => gulp.src(
-            getMatchFiles((path) => `${path}/**/*.${extname}`, false)
-        )
-            .pipe(extname === 'less'
-                ? gulpLess()
-                : sass({outputStyle: 'compressed'}).on('error', sass.logError))
-            .pipe(autoPreFixer())
-            .pipe(rename((path) => {
-                path.extname = ".min.css"
-            }))
-            .pipe(plumber())
-            .pipe(gulp.dest(dest));
-    }
-    const compile = (dest: string) => {
-        return parallel(compilePreprocess('scss', dest), compilePreprocess('less', dest))
-    }
-    return parallel(copy(config.es), copy(config.cjs), compile(config.cjs), compile(config.es))
-}
+        // 配置 PostCSS 插件（自动前缀、压缩）
+        plugins: [
+            autoprefixer({overrideBrowserslist: config.css.browserslist}),
+            cssnano() // 生产环境压缩 CSS
+        ],
 
+        // 输出配置：提取为单独的 CSS 文件（推荐）
+        extract, // 提取到 ${name}.min.css
 
-const copyScssToLib = () => {
-    return gulp.src(
-        getMatchFiles((path) => [`${path}/**/*.scss`, `${path}/**/*.less`], false)
-    )
-        .pipe(logger({
-            before: 'copyScssToLib...',
-            after: 'copyScssToLib complete!',
-            extname: '.scss',
-            showChange: true
-        }))
-        .pipe(gulp.dest(config.cjs));
-}
-const compileEs = () => {
-    const tsConfig = typescript.readConfigFile(resolveApp('tsconfig.json'), typescript.sys.readFile);
-    if (tsConfig.error) {
-        console.log(tsConfig.error.messageText);
-    }
-    const compile = (src: string[], target: string) => {
-        return gulp.src(src)
-            .pipe(logger({
-                before: 'generate ...es ...',
-                after: 'generate ...es complete!',
-                extname: '.ts',
-                showChange: false,
-            }))
-            .pipe(ts({
-                "jsx": "react",
-                "noImplicitAny": true,
-                ...tsConfig.config.compilerOptions,
-                "module": "esnext",
-                "target": "esnext",
-                "newLine": 'crlf',
-                "allowImportingTsExtensions": false,
-                "baseUrl": "./",
-                "isolatedModules": false,
-                "removeComments": false,
-                "declaration": true,
-                "noEmit": false,
-                "esModuleInterop": true,
-                "resolveJsonModule": true,
-                "skipLibCheck": true,
-                "moduleResolution": 'node',
-            }))
-            .on('error', (e) => {
-                console.error(e)
-                throw e;
-            })
-            .pipe(logger({
-                before: 'writing to es...',
-                after: 'write  complete!',
-                extname: '.ts',
-                showChange: true,
-                display: 'name'
-            }))
-            .pipe(plumber())
-            .pipe(gulp.dest(target))
-            .pipe(gulp.src(config.include.map(item => `${item}/**/*.json`)))
-            .pipe(gulp.dest(target));
-    }
-
-    const tasks = include.map((item) => {
-        const isDirectory = item.isDirectory;
-        return () => compile(isDirectory ? [
-                `${item.path}/**/*.{ts,tsx}`,
-                `!${item.path}/**/__test__/!**`,
-                `${config.typings}/**/*.ts`,
-            ] : [item.path],
-            isDirectory && include.length > 1 ?
-                path.join(config.es, relativeToApp(item.path))
-                : config.es
-        )
+        // 可选：不提取，嵌入到 JS 中（通过 import 会生成 style 标签）
+        // extract: false
     })
-    return series(tasks)
 }
+
+const name = getValidPkgName(pkg.name);
+
+// 1. 配置输入选项
+function getInputOptions(declarationDir?: string): RollupOptions {
+    return ({
+        input: shallowInputs,
+        plugins: [
+            resolve(),   // 解析 node_modules
+            commonjs(),   // 转换 CommonJS 模块
+            typescript({
+                tsconfig: resolveApp('tsconfig.json'), // 可选，指定 tsconfig
+                compilerOptions: {
+                    noImplicitAny: true,
+                    isolatedModules: false,
+                    declaration: !!declarationDir,
+                    allowImportingTsExtensions: false,
+                    declarationDir,
+                    noEmit: false,
+                    emitDeclarationOnly: !!declarationDir,
+                    esModuleInterop: true,
+                    resolveJsonModule: true,
+                    skipLibCheck: true,
+                    removeComments: false,
+                    rootDir: resolveApp('src'), // ✅ 指定源代码根目录
+                }
+            }),
+            getPostcss(config.css.extract)
+        ]
+    })
+}
+
+async function buildExtraCss() {
+    const extras = config.css.extra;
+    if (!extras?.length) return;
+
+    const srcRoot = resolveApp('src');
+    const esRoot = resolveApp(config.es);
+
+    const tasks = extras.map(async (v) => {
+        try {
+            const absPath = resolveApp(v);               // 源文件绝对路径
+            const relativePath = path.relative(srcRoot, absPath); // 相对于 src 的路径
+            const dirname = path.dirname(relativePath);  // 相对目录
+            const filename = path.basename(v, path.extname(v)); // 文件名去掉扩展名
+
+            // rollup 打包
+            const bundle = await rollup({
+                input: [v],
+                plugins: getPostcss(path.join(dirname, `${filename}.min.css`))
+            });
+
+            await bundle.write({
+                dir: config.es,
+                format: 'es',
+                sourcemap: false,
+                preserveModules: true,
+                preserveModulesRoot: srcRoot
+            });
+
+            // 删除生成的 JS 文件
+            const jsFile = path.join(esRoot, dirname, `${filename}${path.extname(v)}.js`);
+            if (fs.existsSync(jsFile)) fs.unlinkSync(jsFile);
+
+            // 复制到其他目标目录
+            [config.cjs, config.iife].forEach(targetRoot => {
+                const dest = path.join(resolveApp(targetRoot), dirname, `${filename}.min.css`);
+                fs.mkdirSync(path.dirname(dest), { recursive: true });
+                fs.copyFileSync(
+                    path.join(esRoot, dirname, `${filename}.min.css`),
+                    dest
+                );
+            });
+
+            log.success(`✅ 编译完成: ${v}`);
+        } catch (err) {
+            log.error(`❌ 编译失败: ${v}`, err);
+        }
+    });
+
+    await Promise.all(tasks);
+    log.success('✅ 所有额外 CSS 编译完成');
+}
+
+async function build() {
+
+    // 2. 配置输出选项
+    const outputOptions: OutputOptions[] = [
+        {
+            dir: config.es,
+            format: 'es',  // 输出 ES Module
+            sourcemap: false,
+            preserveModules: true,
+            preserveModulesRoot: resolveApp('src'), // ✅ 指定源代码根目录
+        },
+        {
+            dir: config.cjs,
+            format: 'cjs',  // 输出 COMMONJS
+            sourcemap: false,
+            preserveModules: true,
+            preserveModulesRoot: resolveApp('src'), // ✅ 指定源代码根目录
+            exports: "named",
+        },
+        {
+            dir: config.iife,
+            format: 'iife',  // 输出 iife
+            sourcemap: false,
+            exports: "named",
+            name: toPascalCase(name)
+        }
+    ];
+
+    // 3. 调用 rollup 打包
+    const bundle = await rollup(getInputOptions());
+    for (const output of outputOptions) {
+        // 4. 写入文件
+        await bundle.write(output);
+    }
+    {
+        const bundle = await rollup(getInputOptions(config.es));
+        await bundle.write(outputOptions[0]);
+    }
+    await buildExtraCss();
+    log.success('✅ Build complete!');
+}
+
 const copyTds = () => {
-    return gulp.src([
-        `${config.es}/**/*.d.ts`,
-    ]).pipe(gulp.dest(config.cjs));
+    return gulp.src([`${config.es}/**/*.d.ts`]).pipe(gulp.dest(config.cjs));
 }
-const compileLib = () => {
-    return gulp.src([`${config.es}/**/*.js`])
-        .pipe(logger({
-            before: 'Starting transform ...',
-            after: 'transform complete!',
-            extname: '.js',
-            showChange: true
-        }))
-        .pipe(babel({
-            "presets": [
-                [
-                    "@babel/preset-env",
-                    {
-                        "targets": {
-                            "chrome": "58",
-                            "ie": "9"
-                        }
-                    }
-                ],
-                [
-                    "@babel/preset-react"
-                ]
-            ],
-            "plugins": ["@babel/plugin-transform-runtime"]
-        }))
-        .pipe(plumber())
-        .pipe(logger({
-            before: 'write js ---> ...',
-            after: 'write js ---> complete!',
-            extname: '.js',
-            showChange: true
-        }))
-        .pipe(gulp.dest(config.cjs))
-}
-
-const compileEsAndLib = series(compileEs(), copyTds, compileLib)
-
-export default series(clean, parallel(cssPreprocess(), copyScssToLib, compileEsAndLib))
+export default series(clean, build, copyTds)

@@ -17,6 +17,21 @@ export const getValidPkgName = (str: string) => {
     return str
 }
 
+export function toPascalCase(str?:string) {
+    if (typeof str!== 'string' || str.length === 0) return '';
+    // 先转换为小写，再处理特殊字符和大写字母
+    return str
+        // 将非字母数字字符替换为空格
+        .replace(/[^a-zA-Z0-9]/g, ' ')
+        // 处理连续大写字母（如 "HELLO" 拆分为 "Hello"）
+        .replace(/([A-Z]+)/g, ' $1')
+        // 分割为单词数组（过滤空字符串）
+        .split(/\s+/)
+        .filter(word => word)
+        // 每个单词首字母大写，其余小写
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join('');
+}
 
 /**
  * 版本号比较大小

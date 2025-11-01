@@ -8,11 +8,11 @@ import {log} from "@es-pkg/utils";
 const help = () => {
     log('  Usage:');
     log('        compile  编译项目');
-    log('        iife    iife 打包项目');
     log('        publish    发布项目');
     log('        doc    根据ts声明生成md');
 }
 program.on('--help', help);
+program.on('--v', () => pkg.version);
 
 program
     .version(pkg.version)
@@ -26,8 +26,6 @@ program
         const command = destination[0];
         if (command === 'compile') {
             execute((await import('@es-pkg/compile')))
-        } else if (command === 'iife') {
-            execute((await import('@es-pkg/iife')))
         } else if (command === 'publish') {
             execute((await import('@es-pkg/publish')))
         } else if (command === 'doc') {

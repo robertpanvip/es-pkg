@@ -50,7 +50,6 @@
     "@es-pkg/utils": "file://..utils",
     "@es-pkg/config": "file://..config",
     "@es-pkg/execute": "file://..gulp-execute",
-    "@es-pkg/iife": "file://..iife",
     "@es-pkg/compile": "file://..compile",
     "@es-pkg/publish": "file://..publish"
   }

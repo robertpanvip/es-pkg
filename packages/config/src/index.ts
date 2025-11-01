@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import {defineConfig, EsPkgConfig} from "./defineConfig";
-import {isDirectory} from "@es-pkg/utils";
+import {getValidPkgName, isDirectory} from "@es-pkg/utils";
 
 const appDirectory = fs.realpathSync(process.cwd())
-export const resolveApp = (relativePath: string) => path.resolve(appDirectory, relativePath);
 
+export const resolveApp = (relativePath: string) => path.resolve(appDirectory, relativePath);
 
 export const relativeToApp = (relativePath: string) => {
     const app = resolveApp('');
@@ -39,6 +39,7 @@ function isFileExists(filePath: string) {
 }
 
 const esPkgInfo = getJson('espkg.json')
+
 export const config: Required<EsPkgConfig> = {
     cjs: "./npm/cjs",
     es: "./npm/esm",
@@ -46,11 +47,10 @@ export const config: Required<EsPkgConfig> = {
     typings: "./typings",
     entry: `./src`,
     include: ['./src'],
-    entryCss: [],
     publishDir: `./npm`,
     doc: 'README',
     removeCompiled: true,
-    publishRegistry:"https://registry.npmjs.org",
+    publishRegistry: "https://registry.npmjs.org",
     ...esPkgInfo,
 }
 export const resolveConfig = async () => {
@@ -63,6 +63,19 @@ export const resolveConfig = async () => {
     if (isFileExists(configPath)) {
         const res = require(configPath)
         Object.assign(config, res.default)
+    }
+    if (!config.css) {
+        config.css = {}
+    }
+    if (!config.css.browserslist) {
+        config.css.browserslist = ['last 2 versions']
+    }
+    if(!('extract' in config.css)){
+        const name = getValidPkgName(pkg.name);
+        config.css.extract = `${name}.min.css`
+    }
+    if(!('extra' in config.css)){
+        config.css.extra = []
     }
 }
 const suffixes = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json'];
@@ -112,6 +125,27 @@ export function getIncludeFiles(): { isDirectory: boolean, path: string }[] {
         }]
     });
 }
+
+const include = getIncludeFiles()
+
+function getShallowInputs() {
+    const extNames = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',];
+    return include.flatMap(item => {
+        if (item.isDirectory) {
+            // 获取该目录下一级文件
+            const files = fs.readdirSync(item.path, {withFileTypes: true});
+            return files
+                .filter(f => f.isFile() && extNames.includes(path.extname(f.name)))
+                .map(f => path.join(item.path, f.name));
+        } else if (extNames.includes(path.extname(item.path))) {
+            return [item.path];
+        } else {
+            return [];
+        }
+    })
+}
+
+export const shallowInputs = getShallowInputs();
 
 export const getNpmEntry = (entry: string, _basePath: string) => {
     const npm = config.publishDir;
