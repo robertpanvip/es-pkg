@@ -1,19 +1,22 @@
 import gulp, {series} from "@es-pkg/gulp";
 import {remove, log, getValidPkgName, toPascalCase} from "@es-pkg/utils";
-import {config, shallowInputs, pkg, relativeToApp, resolveApp} from "@es-pkg/config";
-import {OutputOptions, rollup, RollupOptions} from 'rollup';
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import typescript from '@rollup/plugin-typescript';
-import json from '@rollup/plugin-json';
-import postcss from 'rollup-plugin-postcss';
-import autoprefixer from 'autoprefixer';
-import cssnano from 'cssnano';
-import path from 'node:path';
-import fs from 'node:fs'
-import esbuild from 'rollup-plugin-esbuild'
-import {builtinModules} from 'node:module';
+import {config, collectInputs, shallowInputs, pkg, relativeToApp, resolveApp} from "@es-pkg/config";
+import {OutputOptions, rollup, RollupOptions} from "rollup";
+import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+import json from "@rollup/plugin-json";
+import postcss from "rollup-plugin-postcss";
+import autoprefixer from "autoprefixer";
+import cssnano from "cssnano";
+import path from "node:path";
+import fs from "node:fs";
+import esbuild from "rollup-plugin-esbuild";
+import {builtinModules} from "node:module";
+import ts from 'typescript'
 
+const name = getValidPkgName(pkg.name);
+
+/* ------------------ 清理输出目录 ------------------ */
 const clean = () => {
     log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---开始`);
     const promises = [
@@ -21,134 +24,144 @@ const clean = () => {
         remove(config.es, true),
         remove(config.cjs, true),
         remove(config.iife, true),
-    ]
-    return Promise.all(promises).then(res => {
-        log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---结束`)
-    })
-}
+    ];
+    return Promise.all(promises).then(() => {
+        log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---结束`);
+    });
+};
 
+/* ------------------ PostCSS 配置 ------------------ */
 function getPostcss(extract?: string | boolean) {
     return postcss({
-        // 处理 Less（需安装 less）
-        extensions: ['.less', '.scss', '.sass'], // 识别 less 扩展名
-        // 为不同类型的文件指定对应的编译器（关键修改）
+        extensions: [".less", ".scss", ".sass"],
         use: {
-            "stylus": ['sass'],
-            'less': ['less'], //.less 文件用 less 编译
-            'sass': ['sass']  //.sass 文件用 sass 编译（缩进语法）
+            stylus: ["sass"],
+            less: ["less"],
+            sass: ["sass"],
         },
-
-        // 配置 PostCSS 插件（自动前缀、压缩）
-        plugins: [
-            autoprefixer({overrideBrowserslist: config.css.browserslist}),
-            cssnano() // 生产环境压缩 CSS
-        ],
-
-        // 输出配置：提取为单独的 CSS 文件（推荐）
-        extract, // 提取到 ${name}.min.css
-
-        // 可选：不提取，嵌入到 JS 中（通过 import 会生成 style 标签）
-        // extract: false
-    })
+        plugins: [autoprefixer({overrideBrowserslist: config.css.browserslist}), cssnano()],
+        extract,
+    });
 }
 
-const name = getValidPkgName(pkg.name);
-
-// 1. 配置输入选项
-function getInputOptions(format: string, declarationDir?: string): RollupOptions {
-
-    function isNodeModule(id: string) {
-        // 获取模块绝对路径
-        try {
-            const resolved = require.resolve(id, {paths: [process.cwd()]});
-            return resolved.includes('node_modules');
-        } catch {
-            // 无法 resolve 的，认为是本地模块
-            return false;
-        }
+/* ------------------ 判断是否 Node 模块 ------------------ */
+function isNodeModule(id: string) {
+    try {
+        const resolved = require.resolve(id, {paths: [process.cwd()]});
+        return resolved.includes("node_modules");
+    } catch {
+        return false;
     }
+}
 
-    return ({
-        input: shallowInputs.filter(item => !item.endsWith('.d.ts')),
-        external: id => {
-            // Node 内置模块或者 npm 包都 external
+/* ------------------ Rollup 输入配置 ------------------ */
+function getInputOptions(format: string): RollupOptions {
+    return {
+        input: shallowInputs.filter((item) => !item.endsWith(".d.ts")),
+        external: (id) => {
+            // 内置模块和 node_modules 可以外部
             if (builtinModules.includes(id)) return true;
-            // 排除本地相对路径和绝对路径，别名映射到本地也不会 external
-            if (id.startsWith('.') || path.isAbsolute(id)) return false;
-            // node_modules 下的模块才 external
-            return isNodeModule(id);
+            if (!id.startsWith('.') && !path.isAbsolute(id) && isNodeModule(id)) return true;
+            // 保证 src 内部依赖都是内部模块
+            return false;
         },
         plugins: [
             json(),
-            format === 'iife' && resolve(),   // 解析 node_modules
-            format === 'iife' && commonjs({defaultIsModuleExports: true}),   // 转换 CommonJS 模块
-            typescript({
-                tsconfig: resolveApp('tsconfig.json'), // 可选，指定 tsconfig
-                compilerOptions: {
-                    module: 'esnext',
-                    esModuleInterop: true,
-                    allowSyntheticDefaultImports: true,
-                    noImplicitAny: true,
-                    isolatedModules: false,
-                    declaration: !!declarationDir,
-                    declarationDir,
-                    noEmit: false,
-                    emitDeclarationOnly: !!declarationDir,
-                    resolveJsonModule: true,
-                    skipLibCheck: true,
-                    removeComments: false,
-                    rootDir: resolveApp('src'), // ✅ 指定源代码根目录
-                }
+            resolve(),
+            esbuild({target: "es2018", format: "esm"}),
+            commonjs({
+                defaultIsModuleExports: true,
+                esmExternals: true,
+                transformMixedEsModules: true, // 混合模块也转换
             }),
-            ["cjs","commonjs"].includes(format) && esbuild({
-                target: 'esnext',
-                format:  "cjs",
-            }),
-            getPostcss(config.css.extract)
-        ].filter(Boolean)
-    })
+
+            getPostcss(config.css.extract),
+        ],
+    };
 }
 
+/** 生成声明文件 */
+async function buildDeclarations() {
+    const tsConfig = ts.readConfigFile(resolveApp('tsconfig.json'), ts.sys.readFile);
+    if (tsConfig.error) {
+        console.log(tsConfig.error.messageText);
+    }
+    const entryFiles = collectInputs.filter((item) => ['.ts', '.tsx'].some(suf => item.endsWith(suf)));
+
+    const compilerOptions: ts.CompilerOptions = {
+        ...tsConfig.config,
+        declaration: true,
+        emitDeclarationOnly: true,
+        outDir: config.es,
+        rootDir: resolveApp("src"),
+        skipLibCheck: true,
+        esModuleInterop: true,
+        moduleResolution: ts.ModuleResolutionKind.NodeJs,
+        target: ts.ScriptTarget.ESNext,
+        module: ts.ModuleKind.ESNext,
+    };
+
+    const host = ts.createCompilerHost(compilerOptions);
+
+    host.writeFile = (fileName, contents) => {
+        const dir = path.dirname(fileName);
+        fs.mkdirSync(dir, {recursive: true});
+        fs.writeFileSync(fileName, contents, 'utf8');
+    };
+
+    const program = ts.createProgram(entryFiles, compilerOptions, host);
+    const emitResult = program.emit();
+
+    const diagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+    if (diagnostics.length > 0) {
+        console.error(
+            ts.formatDiagnosticsWithColorAndContext(diagnostics, {
+                getCanonicalFileName: f => f,
+                getCurrentDirectory: ts.sys.getCurrentDirectory,
+                getNewLine: () => ts.sys.newLine,
+            }),
+        );
+    } else {
+        console.log(`✅ Declarations generated in: ${path.resolve(config.es)}`);
+    }
+    log.success("✅ Declarations build complete!");
+}
+
+/* ------------------ 额外 CSS 构建 ------------------ */
 async function buildExtraCss() {
     const extras = config.css.extra;
     if (!extras?.length) return;
 
-    const srcRoot = resolveApp('src');
+    const srcRoot = resolveApp("src");
     const esRoot = resolveApp(config.es);
 
     const tasks = extras.map(async (v) => {
         try {
-            const absPath = resolveApp(v);               // 源文件绝对路径
-            const relativePath = path.relative(srcRoot, absPath); // 相对于 src 的路径
-            const dirname = path.dirname(relativePath);  // 相对目录
-            const filename = path.basename(v, path.extname(v)); // 文件名去掉扩展名
+            const absPath = resolveApp(v);
+            const relativePath = path.relative(srcRoot, absPath);
+            const dirname = path.dirname(relativePath);
+            const filename = path.basename(v, path.extname(v));
 
-            // rollup 打包
             const bundle = await rollup({
                 input: [v],
-                plugins: getPostcss(path.join(dirname, `${filename}.min.css`))
+                plugins: getPostcss(path.join(dirname, `${filename}.min.css`)),
             });
 
             await bundle.write({
                 dir: config.es,
-                format: 'es',
+                format: "es",
                 sourcemap: false,
                 preserveModules: true,
-                preserveModulesRoot: srcRoot
+                preserveModulesRoot: srcRoot,
             });
 
-            // 删除生成的 JS 文件
             const jsFile = path.join(esRoot, dirname, `${filename}${path.extname(v)}.js`);
             if (fs.existsSync(jsFile)) fs.unlinkSync(jsFile);
 
-            // 复制到其他目标目录
-            [config.cjs, config.iife].forEach(targetRoot => {
+            [config.cjs, config.iife].forEach((targetRoot) => {
                 const dest = path.join(resolveApp(targetRoot), dirname, `${filename}.min.css`);
                 fs.mkdirSync(path.dirname(dest), {recursive: true});
-                fs.copyFileSync(
-                    path.join(esRoot, dirname, `${filename}.min.css`),
-                    dest
-                );
+                fs.copyFileSync(path.join(esRoot, dirname, `${filename}.min.css`), dest);
             });
 
             log.success(`✅ 编译完成: ${v}`);
@@ -158,60 +171,50 @@ async function buildExtraCss() {
     });
 
     await Promise.all(tasks);
-    log.success('✅ 所有额外 CSS 编译完成');
+    log.success("✅ 所有额外 CSS 编译完成");
 }
 
-async function build() {
-
-    // 2. 配置输出选项
-    let outputOptions: OutputOptions[] = [
+/* ------------------ JS 构建（ES / CJS / IIFE） ------------------ */
+async function buildJS() {
+    const outputOptions: OutputOptions[] = [
         {
             dir: config.es,
-            format: 'es',  // 输出 ES Module
-            sourcemap: false,
+            format: "es",
             preserveModules: true,
-            preserveModulesRoot: resolveApp('src'), // ✅ 指定源代码根目录
+            preserveModulesRoot: resolveApp("src"),
         },
         {
             dir: config.cjs,
-            format: 'cjs',  // 输出 COMMONJS
-            sourcemap: false,
+            format: "cjs",
             preserveModules: true,
-            preserveModulesRoot: resolveApp('src'), // ✅ 指定源代码根目录
+            preserveModulesRoot: resolveApp("src"),
             exports: "named",
+            interop:'auto'
         },
-        {
-            dir: config.iife,
-            format: 'iife',  // 输出 iife
-            sourcemap: false,
-            exports: "named",
-            name: toPascalCase(name)
-        }
+        ...(config.iife
+            ? [
+                {
+                    dir: config.iife,
+                    format: "iife",
+                    exports: "named",
+                    name: toPascalCase(name),
+                } as OutputOptions,
+            ]
+            : []),
     ];
-    if (!config.iife) {
-        outputOptions = outputOptions.filter(op => op.format !== 'iife')
-    }
 
     for (const output of outputOptions) {
-        // 3. 调用 rollup 打包
         const bundle = await rollup(getInputOptions(output.format!));
-        // 4. 写入文件
         await bundle.write(output);
     }
-    {
-        const bundle = await rollup(getInputOptions('es', config.es));
-        await bundle.write(outputOptions[0]);
-    }
+
     await buildExtraCss();
-    log.success('✅ Build complete!');
+    log.success("✅ JS Build complete!");
 }
 
+/* ------------------ 拷贝声明文件 ------------------ */
+const copySrcTds = () => gulp.src(config.include.map((t) => `${t}/**/*.d.ts`)).pipe(gulp.dest(config.es));
+const copyTds = () => gulp.src([`${config.es}/**/*.d.ts`]).pipe(gulp.dest(config.cjs));
 
-const copySrcTds = () => {
-    return gulp.src(config.include.map(t => `${t}/**/*.d.ts`)).pipe(gulp.dest(config.es));
-}
-
-const copyTds = () => {
-    return gulp.src([`${config.es}/**/*.d.ts`]).pipe(gulp.dest(config.cjs));
-}
-export default series(clean, build, copySrcTds, copyTds)
+/* ------------------ 主任务导出 ------------------ */
+export default series(clean, buildJS, buildDeclarations, copySrcTds, copyTds);

@@ -146,6 +146,33 @@ function getShallowInputs() {
 
 export const shallowInputs = getShallowInputs();
 
+function collectSourceFiles() {
+    const extNames = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
+
+    function walk(dirPath: string): string[] {
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+        return entries.flatMap(entry => {
+            const fullPath = path.join(dirPath, entry.name);
+            if (entry.isDirectory()) {
+                return walk(fullPath);
+            }
+            return extNames.includes(path.extname(entry.name)) ? [fullPath] : [];
+        });
+    }
+
+    return include.flatMap(item => {
+        if (item.isDirectory) {
+            return walk(item.path);
+        } else if (extNames.includes(path.extname(item.path))) {
+            return [item.path];
+        } else {
+            return [];
+        }
+    });
+}
+
+export const collectInputs = collectSourceFiles();
+
 export const getNpmEntry = (entry: string, _basePath: string) => {
     const npm = config.publishDir;
     const basename = path.basename(_basePath);
