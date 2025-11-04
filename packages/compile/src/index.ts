@@ -1,6 +1,6 @@
 import gulp, {series} from "@es-pkg/gulp";
-import {remove, log, getValidPkgName, toPascalCase} from "@es-pkg/utils";
-import {config, collectInputs, shallowInputs, pkg, relativeToApp, resolveApp} from "@es-pkg/config";
+import * as utils from "@es-pkg/utils";
+import * as esConfig from "@es-pkg/config";
 import {OutputOptions, rollup, RollupOptions} from "rollup";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
@@ -14,6 +14,8 @@ import esbuild from "rollup-plugin-esbuild";
 import {builtinModules} from "node:module";
 import ts from 'typescript'
 
+const {remove, log, getValidPkgName, toPascalCase} = utils;
+const {config, collectInputs, shallowInputs, pkg, relativeToApp, resolveApp} = esConfig;
 const name = getValidPkgName(pkg.name);
 
 /* ------------------ 清理输出目录 ------------------ */
@@ -68,13 +70,12 @@ function getInputOptions(format: string): RollupOptions {
         plugins: [
             json(),
             resolve(),
-            esbuild({target: "es2018", format: "esm"}),
             commonjs({
                 defaultIsModuleExports: true,
                 esmExternals: true,
                 transformMixedEsModules: true, // 混合模块也转换
             }),
-
+            esbuild({target: "es2018", format: "esm"}),
             getPostcss(config.css.extract),
         ],
     };
@@ -189,7 +190,7 @@ async function buildJS() {
             preserveModules: true,
             preserveModulesRoot: resolveApp("src"),
             exports: "named",
-            interop:'auto'
+            interop: "auto"
         },
         ...(config.iife
             ? [
