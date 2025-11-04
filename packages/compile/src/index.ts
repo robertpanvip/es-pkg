@@ -86,10 +86,15 @@ async function buildDeclarations() {
     if (tsConfig.error) {
         console.log(tsConfig.error.messageText);
     }
+    const parsedConfig = ts.parseJsonConfigFileContent(
+          tsConfig.config,
+          ts.sys,
+          resolveApp("./")
+      );
     const entryFiles = collectInputs.filter((item) => ['.ts', '.tsx'].some(suf => item.endsWith(suf)));
 
     const compilerOptions: ts.CompilerOptions = {
-        ...tsConfig.config,
+        ...parsedConfig.options,
         declaration: true,
         emitDeclarationOnly: true,
         outDir: config.es,
