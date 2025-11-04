@@ -3,6 +3,7 @@
   "description": "test",
   "version": "0.0.1",
   "type": "module",
+  "main": "./src/lib/index.ts",
   "scripts": {
     "dev": "vite",
     "build-site": "tsc && vite build",

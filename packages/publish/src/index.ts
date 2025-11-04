@@ -4,7 +4,7 @@ import logger from '@es-pkg/gulp-logger'
 import fs from "fs"
 import path from "path";
 import {autoUpgrade, compare, remove, run, error, log, success, fetch} from "@es-pkg/utils";
-import {config, getEntrypoint, getIncludeFiles, pkg, resolveApp} from "@es-pkg/config";
+import {config, getPublishedEntry, getIncludeFiles, pkg, resolveApp, resolvePublishedPath} from "@es-pkg/config";
 import prompts from "prompts"
 
 const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
@@ -95,41 +95,60 @@ gulp.task('copy-info', series(async () => {
             registry: REGISTRY
         }
     }
+
+    const publishDir = resolveApp(config.publishDir);
     const es = path.basename(config.es);
     const cjs = path.basename(config.cjs);
     const iife = config.iife ? path.basename(config.iife) : "";
-    const CJSExists = fs.existsSync(path.join(`${config.publishDir}`, cjs))
-    const ESExists = fs.existsSync(path.join(`${config.publishDir}`, es))
-    const IIFEExists = iife ? fs.existsSync(path.join(`${config.publishDir}`, iife)) : false
-    const mainExists = !!json.main && fs.existsSync(path.join(resolveApp(''), json.main as string))
-    const browserExists = !!json.browser && fs.existsSync(path.join(resolveApp(''), json.main as string))
-    const moduleExists = !!json.module && fs.existsSync(path.join(resolveApp(''), json.main as string))
 
-    const _es = getEntrypoint(config.es);
+    const has = {
+        es: fs.existsSync(path.join(publishDir, es)),
+        cjs: fs.existsSync(path.join(publishDir, cjs)),
+        iife: iife && fs.existsSync(path.join(publishDir, iife)),
+        main: !!json.main && fs.existsSync(resolveApp(json.main as string)),
+        module: !!json.module && fs.existsSync(resolveApp(json.module as string)),
+        browser: !!json.browser && fs.existsSync(resolveApp(json.browser as string)),
+    };
 
-    const _cjs = getEntrypoint(config.cjs)
-    if (!mainExists) {
-        if (ESExists) {
-            json.main = _es || _cjs
-        }
-        if (CJSExists) {
-            json.main = _cjs || _es;
-        }
+// 延迟获取已发布入口
+    const entry = (base: string, sub = config.entry) => getPublishedEntry(base, sub);
+
+// 自动补全 main
+    if (!has.main) {
+        json.main = entry(config.cjs) || entry(config.es);
+    } else {
+        json.main = resolvePublishedPath(json.main as string, "cjs")
     }
-    if (!moduleExists && CJSExists) {
-        json.module = _es || _cjs
+
+// 自动补全 module
+    if (!has.module && has.es) {
+        json.module = entry(config.es)!;
+    } else {
+        json.module = resolvePublishedPath(json.main as string, "es")
     }
-    if (!browserExists && IIFEExists) {
-        json.browser = getEntrypoint(config.iife)
+
+// 自动补全 browser
+    if (!has.browser && has.iife) {
+        json.browser = entry(config.iife!, 'es')!;
+    } else {
+        json.browser = resolvePublishedPath(json.main as string)
     }
+
+// 自动补全 types
     if (!json.types) {
-        const type = getEntrypoint(config.es, config.typings) || _es || _cjs;
-        const {dir, name, ext} = path.parse(type);
-        json.types = ['.ts', '.tsx'].includes(ext) ? type : `${dir}/${name}.d.ts`
+        const typeEntry = getPublishedEntry(config.es, config.typings) || (has.es ? entry(config.es) : has.cjs ? entry(config.cjs) : '');
+        if (typeEntry) {
+            const {dir, name, ext} = path.parse(typeEntry);
+            json.types = ['.ts', '.tsx'].includes(ext) ? typeEntry : `${dir}/${name}.d.ts`;
+        }
+    } else {
+        json.types = resolvePublishedPath(json.types as string, 'es')
     }
-    json.files = Array.from(new Set([ESExists && es, CJSExists && cjs, IIFEExists && iife])).filter(Boolean)
 
-    if(json.dependencies){
+// files 去重
+    json.files = Array.from(new Set([has.es && es, has.cjs && cjs, has.iife && iife])).filter(Boolean);
+
+    if (json.dependencies) {
         json.dependencies = Object.fromEntries(Object.entries(json.dependencies).map(([key, value]) => {
             if (value.startsWith('file://') || value.startsWith('workspace:')) {
                 return [key, 'latest']
