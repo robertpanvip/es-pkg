@@ -1,9 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import {defineConfig, EsPkgConfig} from "./defineConfig";
-import {getValidPkgName, isDirectory} from "@es-pkg/utils";
+import {getValidPkgName, isDirectory, log} from "@es-pkg/utils";
 
-const appDirectory = fs.realpathSync(process.cwd());
+/** 支持的源文件后缀 */
+const SOURCE_SUFFIXES = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+
+const cwd = process.cwd();
+
+const appDirectory = fs.realpathSync(cwd);
 
 /** 解析相对路径为绝对路径 */
 export const resolveApp = (relativePath: string) =>
@@ -56,7 +61,6 @@ export const config: Required<EsPkgConfig> = {
     cjs: "./npm/cjs",
     es: "./npm/esm",
     typings: "./typings",
-    entry: "./src",
     include: ["./src"],
     publishDir: "./npm",
     doc: "README",
@@ -66,8 +70,17 @@ export const config: Required<EsPkgConfig> = {
 };
 
 
-/** 解析并应用 espkg.config.ts或 es-pkg.config.ts 或 pkg.config.ts */
+/** 解析并应用 es-pkg.config.ts或 pkg.config.ts */
 export const resolveConfig = async () => {
+    if (typeof config.doc === 'string') {
+        config.doc = {
+            name: pkg.name,
+            desc: pkg.desc,
+            outName: config.doc,
+            tsconfig: path.join(cwd, './tsconfig.json'),
+        }
+    }
+
     const applyConfig = (file: string) => {
         /** 检查文件是否存在 */
         if (!fs.existsSync(file)) return;
@@ -78,9 +91,34 @@ export const resolveConfig = async () => {
     applyConfig(resolveApp("pkg.config.ts"));
     applyConfig(resolveApp("espkg.config.ts"));
     applyConfig(resolveApp("es-pkg.config.ts"));
+    if (!config.entry) {
+        const json = getJson("package.json")
+        config.entry = json.main || json.module || json.browser
+        config.entry && log.info(`解析${resolveApp("package.json")}-入口文件`)
+    }
+    if (!config.entry) {
+        config.entry = `./src/`;
+    }
+    if (config.entry) {
+        if (isDirectory(resolveApp(config.entry))) {
+            config.entry = `${config.entry}index`
+        }
+        if (path.extname(config.entry) === '') {
+            const suffix = SOURCE_SUFFIXES.map(ext => `${config.entry}${ext}`)
+                .find(f => fs.existsSync(f));
+            if (!suffix) {
+                throw new Error('请指定入口文件')
+            } else {
+                config.entry = `${config.entry}${suffix}`
+            }
+        }
+    }
+    if (!config.entry) {
+        throw new Error('请指定入口文件')
+    }
 
     config.css ??= {};
-    config.css.browserslist ??= ["last 2 versions"];
+    config.css.browserslist ??= getJson("package.json").browserslist || ["last 2 versions"];
     config.css.extract ??= `${getValidPkgName(pkg.name)}.min.css`;
     config.css.extra ??= [];
 };
@@ -98,8 +136,7 @@ export function getIncludeFiles(): { isDirectory: boolean; path: string }[] {
 }
 
 const include = getIncludeFiles();
-/** 支持的源文件后缀 */
-const SOURCE_SUFFIXES = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
+
 
 /** 获取 include 目录下的一级源文件 */
 function getShallowInputs() {
@@ -142,68 +179,29 @@ function collectSourceFiles() {
 export const collectInputs = collectSourceFiles();
 
 /** 获取入口文件路径（相对 npm 目录） */
-export function getPublishedEntry(basePath: string, entry = config.entry) {
-    const publishDir = path.resolve(basePath);
-    const srcEntry = path.resolve(entry);
+export function getPublishedEntry(basePath: string, entry = config.entry): string {
+    const srcEntry = resolveApp(entry);
+    const publishDir = resolveApp(config.publishDir);
 
-    let finalPath = "";
+    // 计算相对路径
+    const relativePath = path.relative(resolveApp(''), srcEntry);
+    const entryDir = path.relative(publishDir, basePath);
+    const releaseDir = path.join(publishDir, entryDir);
 
-    const isDir = fs.existsSync(srcEntry) && fs.statSync(srcEntry).isDirectory();
-    if (isDir) {
-        // 如果是目录，查找 index 文件
-        const indexFile = SOURCE_SUFFIXES.map(ext => path.join(srcEntry, `index${ext}`))
-            .find(f => fs.existsSync(f));
-        if (!indexFile) {
-            return ''
-        }
-        finalPath = indexFile;
-    } else {
-        // 如果是文件，直接使用
-        if (!fs.existsSync(srcEntry)) {
-            //throw new Error(`Entry file not found: ${srcEntry}`);
-            return ''
-        }
-        finalPath = srcEntry;
+    // 替换 src 为相对路径，并处理 ts/tsx 到 js 的转换
+    const replacedPath = relativePath.replace(/^src/, '').replace(/\.(ts|tsx)$/, '.js');
+
+    // 目标路径
+    const releaseRelativePath = path.join(releaseDir, relativePath.replace(/\.(ts|tsx)$/, '.js'));
+    const releaseReplacedPath = path.join(releaseDir, replacedPath);
+
+    // 检查文件是否存在，并返回相对路径
+    const fileToCheck = fs.existsSync(releaseReplacedPath) ? releaseReplacedPath : releaseRelativePath;
+    if (fs.existsSync(fileToCheck)) {
+        return path.relative(publishDir, fileToCheck).replaceAll(path.sep, '/');
     }
 
-    // 计算相对于发布目录的路径
-    const relativePath = path.relative(config.publishDir, path.join(publishDir, path.relative(config.entry, finalPath)));
-    return relativePath.split(path.sep).join('/');
-}
-
-export function resolvePublishedPath(main: string, type: "es" | "cjs" = 'es'): string {
-    // 获取 main 的绝对路径
-    const mainSrc = path.resolve(resolveApp(''), main);
-
-    // 如果 main 文件存在
-    if (fs.existsSync(mainSrc)) {
-        // 计算相对路径
-        const relativePath = path.relative(config.entry, mainSrc);
-
-        // 获取目标目录
-        const targetDir = resolveApp(config[type]);
-
-        // 拼接目标文件路径
-        const targetFile = path.join(targetDir, relativePath);
-        // 检查文件是否存在，并返回相对路径
-        if (fs.existsSync(targetFile)) {
-            // 计算相对路径并返回路径格式化为 '/' 分隔符
-            return path.relative(config.publishDir, targetFile).replaceAll(path.sep, '/');
-        }
-        // 如果文件是 ts 或 tsx，改为 js
-        const ext = path.extname(targetFile);
-        const compiledMain = (ext === '.ts' || ext === '.tsx') && !targetFile.endsWith('.d.ts')
-            ? targetFile.slice(0, -ext.length) + '.js'
-            : targetFile;
-
-        // 检查文件是否存在，并返回相对路径
-        if (fs.existsSync(compiledMain)) {
-            // 计算相对路径并返回路径格式化为 '/' 分隔符
-            return path.relative(config.publishDir, compiledMain).replaceAll(path.sep, '/');
-        }
-    }
-
-    return ''; // 如果文件不存在，返回空字符串
+    return '';  // 如果没有找到文件，返回空字符串
 }
 
 export * from "./defineConfig";
