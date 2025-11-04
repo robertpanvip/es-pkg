@@ -88,10 +88,10 @@ async function buildDeclarations() {
         console.log(tsConfig.error.messageText);
     }
     const parsedConfig = ts.parseJsonConfigFileContent(
-          tsConfig.config,
-          ts.sys,
-          resolveApp("./")
-      );
+        tsConfig.config,
+        ts.sys,
+        resolveApp("./")
+    );
     const entryFiles = collectInputs.filter((item) => ['.ts', '.tsx'].some(suf => item.endsWith(suf)));
 
     const compilerOptions: ts.CompilerOptions = {
