@@ -97,6 +97,7 @@ async function buildDeclarations() {
     const compilerOptions: ts.CompilerOptions = {
         ...parsedConfig.options,
         declaration: true,
+        noEmit: false,
         emitDeclarationOnly: true,
         outDir: config.es,
         rootDir: resolveApp("src"),
