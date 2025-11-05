@@ -126,7 +126,8 @@ gulp.task('copy-info', series(async () => {
 
 // 自动补全 types
     if (!json.types) {
-        const typeEntry = entry(config.es, config.typings) || (has.es ? entry(config.es) : has.cjs ? entry(config.cjs) : '');
+        const typeEntry = (has.es ? entry(config.es) : has.cjs ? entry(config.cjs) : '');
+
         if (typeEntry) {
             const {dir, name, ext} = path.parse(typeEntry);
             json.types = ['.ts', '.tsx'].includes(ext) ? typeEntry : `${dir}/${name}.d.ts`;

@@ -10,7 +10,6 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "tes-compile": "es-pkg compile",
-    "unpkg": "es-pkg unpkg",
     "doc": "es-pkg doc",
     "test-publish": "es-pkg publish"
   },
