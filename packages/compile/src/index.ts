@@ -19,7 +19,7 @@ const {config, collectInputs, shallowInputs, pkg, relativeToApp, resolveApp} = e
 const name = getValidPkgName(pkg.name);
 
 /* ------------------ 清理输出目录 ------------------ */
-const clean = () => {
+const clean = async () => {
     log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---开始`);
     const promises = [
         remove(config.publishDir, true),
@@ -27,14 +27,16 @@ const clean = () => {
         remove(config.cjs, true),
         remove(config.iife, true),
     ];
-    return Promise.all(promises).then(() => {
-        log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---结束`);
-    });
+    await Promise.all(promises);
+    log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---结束`);
 };
 
 /* ------------------ PostCSS 配置 ------------------ */
 function getPostcss(extract?: string | boolean) {
     return postcss({
+        modules: {
+            localsConvention: 'camelCase', // ✅ 横线转驼峰命名
+        },
         extensions: [".less", ".scss", ".sass"],
         use: {
             stylus: ["sass"],
