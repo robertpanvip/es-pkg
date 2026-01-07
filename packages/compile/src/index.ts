@@ -5,6 +5,7 @@ import {OutputOptions, rollup, RollupOptions} from "rollup";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import json from "@rollup/plugin-json";
+import dts from 'rollup-plugin-dts';
 import postcss from "rollup-plugin-postcss";
 import autoprefixer from "autoprefixer";
 import cssnano from "cssnano";
@@ -15,7 +16,7 @@ import {builtinModules} from "node:module";
 import ts from 'typescript'
 
 const {remove, log, getValidPkgName, toPascalCase} = utils;
-const {config, collectInputs, shallowInputs, pkg, relativeToApp, resolveApp} = esConfig;
+const {config, shallowInputs, pkg, relativeToApp, resolveApp} = esConfig;
 const name = getValidPkgName(pkg.name);
 
 /* ------------------ 清理输出目录 ------------------ */
@@ -59,7 +60,7 @@ function isNodeModule(id: string) {
 }
 
 /* ------------------ Rollup 输入配置 ------------------ */
-function getInputOptions(format: string): RollupOptions {
+function getInputOptions(emit: boolean): RollupOptions {
     return {
         input: shallowInputs.filter((item) => !item.endsWith(".d.ts")),
         external: (id) => {
@@ -77,14 +78,14 @@ function getInputOptions(format: string): RollupOptions {
                 esmExternals: true,
                 transformMixedEsModules: true, // 混合模块也转换
             }),
-            esbuild({target: "es2018", format: "esm"}),
+            emit ? dts({compilerOptions: getCompilerOptions()}) : esbuild({target: "es2018", format: "esm"}),
             getPostcss(config.css.extract),
         ],
     };
 }
 
 /** 生成声明文件 */
-async function buildDeclarations() {
+function getCompilerOptions() {
     const tsConfig = ts.readConfigFile(resolveApp('tsconfig.json'), ts.sys.readFile);
     if (tsConfig.error) {
         console.log(tsConfig.error.messageText);
@@ -94,8 +95,6 @@ async function buildDeclarations() {
         ts.sys,
         resolveApp("./")
     );
-    const entryFiles = collectInputs.filter((item) => ['.ts', '.tsx'].some(suf => item.endsWith(suf)));
-
     const compilerOptions: ts.CompilerOptions = {
         ...parsedConfig.options,
         declaration: true,
@@ -109,31 +108,7 @@ async function buildDeclarations() {
         target: ts.ScriptTarget.ESNext,
         module: ts.ModuleKind.ESNext,
     };
-
-    const host = ts.createCompilerHost(compilerOptions);
-
-    host.writeFile = (fileName, contents) => {
-        const dir = path.dirname(fileName);
-        fs.mkdirSync(dir, {recursive: true});
-        fs.writeFileSync(fileName, contents, 'utf8');
-    };
-
-    const program = ts.createProgram(entryFiles, compilerOptions, host);
-    const emitResult = program.emit();
-
-    const diagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
-    if (diagnostics.length > 0) {
-        console.error(
-            ts.formatDiagnosticsWithColorAndContext(diagnostics, {
-                getCanonicalFileName: f => f,
-                getCurrentDirectory: ts.sys.getCurrentDirectory,
-                getNewLine: () => ts.sys.newLine,
-            }),
-        );
-    } else {
-        console.log(`✅ Declarations generated in: ${path.resolve(config.es)}`);
-    }
-    log.success("✅ Declarations build complete!");
+    return compilerOptions
 }
 
 /* ------------------ 额外 CSS 构建 ------------------ */
@@ -183,8 +158,16 @@ async function buildExtraCss() {
     log.success("✅ 所有额外 CSS 编译完成");
 }
 
-/* ------------------ JS 构建（ES / CJS / IIFE） ------------------ */
+async function buildDts() {
+    return build(true)
+}
+
 async function buildJS() {
+    return build(false)
+}
+
+/* ------------------ JS 构建（ES / CJS / IIFE） ------------------ */
+async function build(emit: boolean) {
     const outputOptions: OutputOptions[] = [
         {
             dir: config.es,
@@ -213,17 +196,13 @@ async function buildJS() {
     ];
 
     for (const output of outputOptions) {
-        const bundle = await rollup(getInputOptions(output.format!));
+        const bundle = await rollup(getInputOptions(emit));
         await bundle.write(output);
     }
 
-    await buildExtraCss();
-    log.success("✅ JS Build complete!");
+    !emit && await buildExtraCss();
+    log.success(`✅ ${emit?'DTS ':"JS "}Build complete!`);
 }
 
-/* ------------------ 拷贝声明文件 ------------------ */
-const copySrcTds = () => gulp.src(config.include.map((t) => `${t}/**/*.d.ts`)).pipe(gulp.dest(config.es));
-const copyTds = () => gulp.src([`${config.es}/**/*.d.ts`]).pipe(gulp.dest(config.cjs));
-
 /* ------------------ 主任务导出 ------------------ */
-export default series(clean, buildJS, buildDeclarations, copySrcTds, copyTds);
+export default series(clean, buildJS, buildDts);
