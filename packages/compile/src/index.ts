@@ -1,4 +1,4 @@
-import gulp, {series} from "@es-pkg/gulp";
+import {series} from "@es-pkg/gulp";
 import * as utils from "@es-pkg/utils";
 import * as esConfig from "@es-pkg/config";
 import {OutputOptions, rollup, RollupOptions} from "rollup";
@@ -61,26 +61,33 @@ function isNodeModule(id: string) {
 
 /* ------------------ Rollup 输入配置 ------------------ */
 function getInputOptions(emit: boolean): RollupOptions {
+    const defaultPlugins = [
+        json(),
+        resolve(),
+        commonjs({
+            defaultIsModuleExports: true,
+            esmExternals: true,
+            transformMixedEsModules: true, // 混合模块也转换
+        }),
+        emit ? dts({compilerOptions: getCompilerOptions()}) : esbuild({target: "es2018", format: "esm"}),
+        getPostcss(config.css.extract),
+    ]
+    const plugins = config.rollupOptions?.plugins ? config.rollupOptions?.plugins?.(defaultPlugins) : defaultPlugins
     return {
         input: shallowInputs.filter((item) => !item.endsWith(".d.ts")),
         external: (id) => {
-            // 内置模块和 node_modules 可以外部
-            if (builtinModules.includes(id)) return true;
-            if (!id.startsWith('.') && !path.isAbsolute(id) && isNodeModule(id)) return true;
-            // 保证 src 内部依赖都是内部模块
-            return false;
+            const defaultExternal = (id: string) => {
+                // 内置模块和 node_modules 可以外部
+                if (builtinModules.includes(id)) return true;
+                return !!(!id.startsWith('.') && !path.isAbsolute(id) && isNodeModule(id));
+            }
+            if (config.rollupOptions?.external) {
+                return config.rollupOptions.external(id, defaultExternal);
+            } else {
+                return defaultExternal(id)
+            }
         },
-        plugins: [
-            json(),
-            resolve(),
-            commonjs({
-                defaultIsModuleExports: true,
-                esmExternals: true,
-                transformMixedEsModules: true, // 混合模块也转换
-            }),
-            emit ? dts({compilerOptions: getCompilerOptions()}) : esbuild({target: "es2018", format: "esm"}),
-            getPostcss(config.css.extract),
-        ],
+        plugins,
     };
 }
 
@@ -201,7 +208,7 @@ async function build(emit: boolean) {
     }
 
     !emit && await buildExtraCss();
-    log.success(`✅ ${emit?'DTS ':"JS "}Build complete!`);
+    log.success(`✅ ${emit ? 'DTS ' : "JS "}Build complete!`);
 }
 
 /* ------------------ 主任务导出 ------------------ */

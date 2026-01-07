@@ -1,4 +1,10 @@
 import type {DocOptions} from '@es-pkg/doc'
+import {RollupOptions as Options, InputPluginOption} from "rollup";
+
+export interface RollupOptions extends Omit<Options, 'plugins' | "external"> {
+    plugins?: (defaultPlugin: InputPluginOption[]) => InputPluginOption;
+    external?: (id: string, defaultExternal: (id: string) => boolean) => boolean
+}
 
 /**
  * EsPkg配置
@@ -18,11 +24,11 @@ export interface EsPkgConfig {
     entry?: string,
     css?: {
         /** 额外包含的css文件 @default默认为[] */
-        extra?:string[],
+        extra?: string[],
         /** autoprefixer  browserslist @default 默认为['last 2 versions'] */
         browserslist?: string[],
         /**输出配置：提取为单独的 CSS 文件（推荐） 可选：不提取，嵌入到 JS 中（通过 import 会生成 style 标签） @default 默认为${name}.min.css */
-        extract?:boolean | string
+        extract?: boolean | string
     }
     publishAccess?: [string, string],
     /** 发布仓库 默认https://registry.npmjs.org**/
@@ -31,6 +37,7 @@ export interface EsPkgConfig {
     publishDir?: string,
     /** md文档名称 @default 默认为 README */
     doc?: string | Partial<DocOptions>,
+    rollupOptions?: RollupOptions
 }
 
 /**

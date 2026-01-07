@@ -1,8 +1,9 @@
 import styles from './index.module.scss';
 import ch from 'chalk';
-
+import React from 'react';
 console.log(ch.red);
 console.log(styles);
-export default function add3(a:number, b:number) {
-    return a + b;
+console.log(React)
+export default function add3(a:React.ReactElement, b:number) {
+    return a;
 }
