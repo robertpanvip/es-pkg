@@ -124,7 +124,7 @@ gulp.task('copy-info', series(async () => {
         })
 
         if (matched) {
-            json[field] = Array.isArray(json[field]) ? (json[field] as string[]).map(item => item.replaceAll('.ts', '.js')) : (json[field] as string).replaceAll('.ts', field === 'typings' ? ".d.ts" : ".js")
+            json[field] = Array.isArray(json[field]) ? (json[field] as string[]).map(item => item.replaceAll('.ts', '.js')) : (json[field] as string).replaceAll('.ts', field === 'types' ? ".d.ts" : ".js")
         } else {
             call()
         }
