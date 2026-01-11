@@ -11,7 +11,7 @@ export interface RollupOptions extends Omit<Options, 'plugins' | "external"> {
  */
 export interface EsPkgConfig {
     /** cjs 目录 @default 默认为./npm/cjs */
-    cjs?: string,
+    cjs?: string|false,
     /** es 目录 @default 默认为./npm/es */
     es?: string,
     /** iife 目录 @default 默认为./npm/dist */

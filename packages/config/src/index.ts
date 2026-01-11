@@ -135,12 +135,10 @@ export function getIncludeFiles(): { isDirectory: boolean; path: string }[] {
     });
 }
 
-const include = getIncludeFiles();
-
-
 /** 获取 include 目录下的一级源文件 */
-function getShallowInputs() {
+export function getShallowInputs() {
     const EXT = SOURCE_SUFFIXES;
+    const include = getIncludeFiles();
     return include.flatMap(item => {
         if (!item.isDirectory) {
             return EXT.includes(path.extname(item.path)) ? [item.path] : [];
@@ -151,32 +149,6 @@ function getShallowInputs() {
             .map(f => path.join(item.path, f.name));
     });
 }
-
-export const shallowInputs = getShallowInputs();
-
-/** 递归收集所有源文件路径 */
-function collectSourceFiles() {
-    const EXT = SOURCE_SUFFIXES;
-    const walk = (dirPath: string): string[] =>
-        fs.readdirSync(dirPath, {withFileTypes: true}).flatMap(entry => {
-            const fullPath = path.join(dirPath, entry.name);
-            return entry.isDirectory()
-                ? walk(fullPath)
-                : EXT.includes(path.extname(entry.name))
-                    ? [fullPath]
-                    : [];
-        });
-
-    return include.flatMap(item =>
-        item.isDirectory
-            ? walk(item.path)
-            : EXT.includes(path.extname(item.path))
-                ? [item.path]
-                : []
-    );
-}
-
-export const collectInputs = collectSourceFiles();
 
 /** 获取入口文件路径（相对 npm 目录） */
 export function getPublishedEntry(basePath: string, entry = config.entry): string {

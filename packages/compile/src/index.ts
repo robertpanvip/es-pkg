@@ -16,20 +16,20 @@ import {builtinModules} from "node:module";
 import ts from 'typescript'
 
 const {remove, log, getValidPkgName, toPascalCase} = utils;
-const {config, shallowInputs, pkg, relativeToApp, resolveApp} = esConfig;
+const {config, getShallowInputs, pkg, relativeToApp, resolveApp} = esConfig;
 const name = getValidPkgName(pkg.name);
 
 /* ------------------ 清理输出目录 ------------------ */
 const clean = async () => {
-    log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---开始`);
+    log(`${config.es && `清除 ${relativeToApp(config.es)}`} ${config.cjs && `& ${relativeToApp(config.cjs)}`} 目录---开始`);
     const promises = [
         remove(config.publishDir, true),
-        remove(config.es, true),
-        remove(config.cjs, true),
+        config.es && remove(config.es, true),
+        config.cjs && remove(config.cjs, true),
         remove(config.iife, true),
-    ];
+    ].filter(Boolean);
     await Promise.all(promises);
-    log(`清除 ${relativeToApp(config.es)} & ${relativeToApp(config.cjs)} 目录---结束`);
+    log(`${config.es && `清除 ${relativeToApp(config.es)}`} ${config.cjs && `& ${relativeToApp(config.cjs)}`} 目录---结束`);
 };
 
 /* ------------------ PostCSS 配置 ------------------ */
@@ -74,7 +74,7 @@ function getInputOptions(emit: boolean): RollupOptions {
     ]
     const plugins = config.rollupOptions?.plugins ? config.rollupOptions?.plugins?.(defaultPlugins) : defaultPlugins
     return {
-        input: shallowInputs.filter((item) => !item.endsWith(".d.ts")),
+        input: getShallowInputs().filter((item) => !item.endsWith(".d.ts")),
         external: (id) => {
             const defaultExternal = (id: string) => {
                 // 内置模块和 node_modules 可以外部
@@ -107,7 +107,7 @@ function getCompilerOptions() {
         declaration: true,
         noEmit: false,
         emitDeclarationOnly: true,
-        outDir: config.es,
+        outDir: config.es as string,
         rootDir: resolveApp("src"),
         skipLibCheck: true,
         esModuleInterop: true,
@@ -149,8 +149,8 @@ async function buildExtraCss() {
             const jsFile = path.join(esRoot, dirname, `${filename}${path.extname(v)}.js`);
             if (fs.existsSync(jsFile)) fs.unlinkSync(jsFile);
 
-            [config.cjs, config.iife].forEach((targetRoot) => {
-                const dest = path.join(resolveApp(targetRoot), dirname, `${filename}.min.css`);
+            [config.cjs, config.iife].filter(Boolean).forEach((targetRoot) => {
+                const dest = path.join(resolveApp(targetRoot as string), dirname, `${filename}.min.css`);
                 fs.mkdirSync(path.dirname(dest), {recursive: true});
                 fs.copyFileSync(path.join(esRoot, dirname, `${filename}.min.css`), dest);
             });
@@ -182,7 +182,7 @@ async function build(emit: boolean) {
             preserveModules: true,
             preserveModulesRoot: resolveApp("src"),
         },
-        {
+        config.cjs && {
             dir: config.cjs,
             format: "cjs",
             preserveModules: true,
@@ -190,17 +190,13 @@ async function build(emit: boolean) {
             exports: "named",
             interop: "auto"
         },
-        ...(config.iife
-            ? [
-                {
-                    dir: config.iife,
-                    format: "iife",
-                    exports: "named",
-                    name: toPascalCase(name),
-                } as OutputOptions,
-            ]
-            : []),
-    ];
+        config.iife && {
+            dir: config.iife,
+            format: "iife",
+            exports: "named",
+            name: toPascalCase(name),
+        },
+    ].filter(Boolean) as OutputOptions[];
 
     for (const output of outputOptions) {
         const bundle = await rollup(getInputOptions(emit));

@@ -4,7 +4,7 @@ import logger from '@es-pkg/gulp-logger'
 import fs from "fs"
 import path from "path";
 import {autoUpgrade, compare, remove, run, error, log, success, fetch} from "@es-pkg/utils";
-import {config, getPublishedEntry, getIncludeFiles, pkg, resolveApp} from "@es-pkg/config";
+import {config, getPublishedEntry, pkg, resolveApp} from "@es-pkg/config";
 import prompts from "prompts"
 
 const scoped = /^@[a-zA-Z0-9-]+\/.+$/;
@@ -30,9 +30,11 @@ gulp.task('del-cjs-iife-es', async () => {
         log(`删除 ${path.join(`${publishDir}`, config.iife)} 结束`)
     }
 
-    log(`删除 ${path.join(`${publishDir}`, config.cjs)} 开始`)
-    await remove(`${path.join(`${publishDir}`, config.cjs)}`);
-    log(`删除 ${path.join(`${publishDir}`, config.cjs)} 结束`)
+    if (config.cjs) {
+        log(`删除 ${path.join(`${publishDir}`, config.cjs)} 开始`)
+        await remove(`${path.join(`${publishDir}`, config.cjs)}`);
+        log(`删除 ${path.join(`${publishDir}`, config.cjs)} 结束`)
+    }
 
     log(`删除 ${path.join(`${publishDir}`, config.es)} 开始`)
     await remove(`${path.join(`${publishDir}`, config.es)}`);
@@ -98,44 +100,73 @@ gulp.task('copy-info', series(async () => {
 
     const publishDir = resolveApp(config.publishDir);
     const es = path.basename(config.es);
-    const cjs = path.basename(config.cjs);
+    const cjs = config.cjs ? path.basename(config.cjs) : "";
     const iife = config.iife ? path.basename(config.iife) : "";
 
     const has = {
         es: fs.existsSync(path.join(publishDir, es)),
-        cjs: fs.existsSync(path.join(publishDir, cjs)),
+        cjs: config.cjs && fs.existsSync(path.join(publishDir, cjs)),
         iife: iife && fs.existsSync(path.join(publishDir, iife)),
     };
 
 // 延迟获取已发布入口
     const entry = (base: string, sub = config.entry) => getPublishedEntry(base, sub);
-// 自动补全 main
-    if (has.es || has.cjs) {
-        json.main = entry(config.cjs) || entry(config.es);
-    }
 
-// 自动补全 module
-    if (has.es) {
-        json.module = entry(config.es)!;
-    }
+    const fillField = (field: string, call: () => void) => {
 
-// 自动补全 browser
-    if (has.iife) {
-        json.browser = entry(config.iife!, 'es')!;
-    }
+        if (!json[field]) {
+            return call()
+        }
+        const fields = (Array.isArray(json[field]) ? json[field] : [json[field]]) as string[];
+        const matched = fields.every(item => {
+            const p = path.join(publishDir, item.replaceAll('.ts', '.js'));
+            return fs.existsSync(resolveApp(item)) && fs.existsSync(resolveApp(p))
+        })
 
-// 自动补全 types
-    if (!json.types) {
-        const typeEntry = (has.es ? entry(config.es) : has.cjs ? entry(config.cjs) : '');
-
-        if (typeEntry) {
-            const {dir, name, ext} = path.parse(typeEntry);
-            json.types = ['.ts', '.tsx'].includes(ext) ? typeEntry : `${dir}/${name}.d.ts`;
+        if (matched) {
+            json[field] = Array.isArray(json[field]) ? (json[field] as string[]).map(item => item.replaceAll('.ts', '.js')) : (json[field] as string).replaceAll('.ts', field === 'typings' ? ".d.ts" : ".js")
+        } else {
+            call()
         }
     }
 
-// files 去重
-    json.files = Array.from(new Set([has.es && es, has.cjs && cjs, has.iife && iife])).filter(Boolean);
+    fillField('main', () => {
+        // 自动补全 main
+        if (has.es || has.cjs) {
+            json.main = (config.cjs ? entry(config.cjs) : '') || entry(config.es);
+        }
+    })
+
+    fillField('module', () => {
+        // 自动补全 module
+        if (has.es) {
+            json.module = entry(config.es)!;
+        }
+    })
+
+    fillField('browser', () => {
+        // 自动补全 browser
+        if (has.iife) {
+            json.browser = entry(config.iife!, 'es')!;
+        }
+    })
+
+    fillField("types", () => {
+        // 自动补全 types
+        if (!json.types) {
+            const typeEntry = (has.es ? entry(config.es) : has.cjs ? (config.cjs ? entry(config.cjs) : "") : '');
+
+            if (typeEntry) {
+                const {dir, name, ext} = path.parse(typeEntry);
+                json.types = ['.ts', '.tsx'].includes(ext) ? typeEntry : `${dir}/${name}.d.ts`;
+            }
+        }
+    })
+
+    fillField("files", () => {
+        // files 去重
+        json.files = Array.from(new Set([has.es && es, has.cjs && cjs, has.iife && iife])).filter(Boolean);
+    })
 
     if (json.dependencies) {
         json.dependencies = Object.fromEntries(Object.entries(json.dependencies).map(([key, value]) => {
@@ -182,7 +213,10 @@ gulp.task('copy-iife', (c) => {
         }))
         .pipe(gulp.dest(path.join(`${publishDir}`, path.basename(config.iife))));
 });
-gulp.task('copy-cjs', () => {
+gulp.task('copy-cjs', (c) => {
+    if (!config.cjs) {
+        return c()
+    }
     return gulp.src([`${config.cjs}/.**`, `${config.cjs}/**`])
         .pipe(logger({
             before: 'copy cjs...',
@@ -203,12 +237,11 @@ gulp.task('copy-es', () => {
 
 gulp.task('remove-__npm__', series(() => {
     let promises: Promise<void>[] = [];
-    const includes = [config.es, config.cjs, config.iife].flatMap(val => {
+    const includes = [config.es, config.cjs, config.iife].filter(Boolean).flatMap(val => {
         if (!val) {
             return []
         }
-        const some = getIncludeFiles().some(item => path.resolve(val).startsWith(path.resolve(item.path)))
-        return some ? [] : [val]
+        return [path.join(`${publishDir}`, path.basename(val))]
     })
     promises = includes.map(item => remove(item))
     return Promise.all(promises)

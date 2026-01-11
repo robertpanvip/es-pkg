@@ -23,7 +23,6 @@ gulp 配置
 |📒EsPkgConfig|`Interfaces`|
 |☀️config|`Variables`|
 |☀️pkg|`Variables`|
-|☀️shallowInputs|`Variables`|
 |🎗️defineConfig|`Functions`|
 |🎗️getDirectoryIndexPath|`Functions`|
 |🎗️getEntrypoint|`Functions`|
@@ -90,13 +89,6 @@ EsPkg配置
 #### `Const` pkg
 
 : `any` = ...
-
-  
-  
-
-#### `Const` shallowInputs
-
-: `string`\[\] = ...
 
 **🎗️Functions**
 ----------------
